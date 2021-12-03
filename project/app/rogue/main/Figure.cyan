@@ -1,0 +1,103 @@
+package main
+
+object Figure extends Entity
+
+  var String id
+  var Int typeId
+  var Board board
+  var Player player
+  
+  var Int life
+  var Int lifeMax
+  var Int rangeMax
+  var Int damage
+  var Int distanceMax
+  
+  var Int column
+  var Int row
+  
+  func init: String id, Int typeId, Board board, Player player {
+    self.id = id;
+    self.typeId = typeId;
+    self.board = board;
+    self.player = player;
+    
+    self.lifeMax = 12;
+    self.life = 12;
+    self.rangeMax = 6;
+    self.damage = 4;
+    self.distanceMax = 5;
+    
+    if typeId == Const MAGE {
+      self.lifeMax = 8;
+      self.life = 8;
+      self.rangeMax = 7;
+      self.damage = 4;
+      self.distanceMax = 10;
+    }
+    
+    self.row = 0;
+    self.column = 0;
+  }
+
+  func setPosition: Int row, Int column {
+    self.row = row;
+    self.column = column;
+  }
+  
+  func getRow -> Int {
+    return self.row;
+  }
+  
+  func getColumn -> Int {
+    return self.column;
+  }
+  
+  func getId -> String {
+    return self.id;
+  }
+  
+  func getDamage -> Int {
+    return self.damage;
+  }
+  
+  func getLife -> Int {
+    return self.life;
+  }
+  
+  func setLife: Int life {
+    self.life = life;
+  }
+  
+  func getLifeMax -> Int {
+    return self.lifeMax;
+  }
+  
+  func getDistanceMax -> Int {
+    return self.distanceMax;
+  }
+  
+  override func getType -> Int {
+    return self.typeId;
+  }
+  
+  override func draw {
+    if (self.player getId) == "P1" {
+      if self.typeId == Const MAGE {
+        MapCanvas write: "?";
+      }
+      else if self.typeId == Const WARRIOR {
+        MapCanvas write: "@";
+      }
+    }
+    else {
+      if self.typeId == Const MAGE {
+        MapCanvas write: "!";
+      }
+      else if self.typeId == Const WARRIOR {
+        MapCanvas write: "&";
+      }
+    }
+  }
+
+end

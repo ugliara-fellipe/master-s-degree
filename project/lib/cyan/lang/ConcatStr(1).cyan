@@ -1,0 +1,11 @@
+package cyan.lang
+
+object ConcatStr<T>(String &sum, String between) extends Function<T, Nil>
+     
+     override
+     func eval: T elem {
+          sum = sum ++ elem ++ between
+     }
+     
+end
+

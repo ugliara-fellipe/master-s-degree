@@ -1,0 +1,200 @@
+package cyan.lang
+
+public object Any
+
+    final fun eq:  (Nil|Any other) -> Boolean { 
+        other unionCase: Nil do: { return false }
+              unionCase: Any do: {
+              Any any = other;
+    	      @javacode<*< 
+                  return new CyBoolean(eq(_any));
+              >*>
+        };
+	}
+    final fun neq: (Nil|Any other) -> Boolean { ^ ! (eq: other) }
+	
+
+    @prototypeCallOnly
+    fun cast: (Any other) -> Any { ^other }
+    fun prototype -> Any { ^self }
+    final fun prototypeName -> String { 
+        @javacode<<*
+            return new CyString( getPrototypeName() );
+        *>>
+    }
+    
+    
+    final fun parent -> Nil|Any { @javacode<<<< return  parent(); >>>> }
+    
+    final fun isInterface -> Boolean { 
+        @javacode<<< 
+            return new CyBoolean(isInterface());
+        >>>
+    }
+    
+    @checkIsA
+    final fun isA: (Any proto) -> Boolean { 
+        var Any current = self prototype;
+        while (Int cast: current) != -1 {
+            if current == proto {
+                return true
+            }
+            else {
+                current = current parent
+            }
+        };
+        @javacode<*<
+            Object elem = getUnionElem();
+            if ( elem != null ) {
+                return elem._isA_dot(_proto);
+            }
+        >*>
+        return false;
+    }
+    
+    @checkThrow
+    final fun throw: (CyException e) {
+        @javacode<<<
+        throw _e;
+        >>>
+    }
+
+    fun hashCode -> Int { 
+        @javacode<<<
+            return new CyInt(hashCode());
+        >>>
+    }
+    
+    fun clone -> Any { ^self }
+    
+
+    private fun primitiveNew -> Any { ^Any }
+    
+    fun asString -> String { asString: 0 }
+    
+    fun asString: (Int ident) -> String {
+        @javacode<<<<
+        return new CyString(asString(_ident.n));
+        >>>>
+    }
+    fun == (Nil|Any other) -> Boolean { @javacode<<< return this == _other >>> }
+    fun isCase: (Any other) -> Boolean { ^self == other }
+    
+    fun === (Nil|Any other) -> Boolean { return self == other }
+
+    fun != (Nil|Any other) -> Boolean { @javacode<<< return this != _other >>> }
+    
+    fun assert: (Boolean expr) { 
+	    if ! expr  {
+	        @javacode<<<
+		    throw new Exception();
+    		>>>
+		}
+	}
+    fun print { Out println: (self asString) }
+    fun println { print; Out println: "\n" }
+    fun defaultValue -> Any { ^ Any }
+	
+    @checkAttachMixin
+    fun attachMixin: (Any mixProto) { }
+    fun popMixin -> Boolean { }
+	
+    fun featureList -> Array<Tuple<key, String, value, Any>> { 
+        @javacode<<<
+            return getFeatureList();
+        >>>
+    }
+
+    // return the list of feature of instance variable,
+    // method, or constant "slotName"
+    fun featureList: (String slotName) -> Array<Tuple<key, String, value, Any>> { 
+        var Array<Tuple<key, String, value, Any>> ret = Array<Tuple<key, String, value, Any>> new;
+        var Array<Tuple<slotName, String, key, String, value, Any>> anArray = slotFeatureList;
+        anArray foreach: { (: Tuple<slotName, String, key, String, value, Any> elem :)
+            if slotName == elem slotName {
+                ret add: (Tuple<key, String, value, Any> new: (elem key), (elem value));
+            }
+        };
+        return ret;
+    }
+
+    fun slotFeatureList -> Array<Tuple<slotName, String, key, String, value, Any>> { 
+        @javacode<<<
+            return getSlotFeatureList();
+        >>>
+    }
+
+
+    fun annotList -> Array<Any> { 
+        var Array<Any> anyList;
+        @javacode{*  _anyList = getAnnotList(); *}
+        if  anyList == Nil {
+            anyList = Array<Any> new;
+            featureList foreach: { (: Tuple<key, String, value, Any> elem :)
+                if elem key == "annot" { anyList add:  elem value; }
+            };
+        };
+        return anyList;
+    }
+
+        
+    fun annotList: (String slotName) -> Array<Any> { 
+        var anyList = Array<Any> new;
+        (featureList: slotName) foreach: { (: Tuple<key, String, value, Any> elem :)
+            if elem key == "annot" { anyList add:  elem value; }
+        };
+        return anyList;    
+    }
+    
+
+    fun (selector: String (param: (Any)+)? )+ t  -> Nil|Any {  }
+    
+    fun (invokeMethod: selector: String (param: (Any)+)? )+ t -> Nil|Any {  
+    }
+
+    @checkAddMethod
+    fun (addMethod:
+                 (selector: String ( param: (Any)+ )?
+                   )+
+                  (returnType: Any)?
+                  body: Any) t { 
+	}
+
+    fun doesNotUnderstand: (CySymbol methodName, Array<Array<Any>> args) {
+         Out println: ("Method " + methodName + " was not found");
+         System exit: 1
+	}
+
+    @checkSwitch 
+    fun ( 
+          (case: (Any)+ do: Function<Nil>)+
+          (else: Function<Nil>)?
+        )  t {  // Tuple<Any, Array<Tuple<Array<Any>, Function<Nil>>>, Union<Function<Nil>>> 
+    }
+
+    @checkGetMethod
+    final fun getMethod: String signature -> Any {
+        @javacode<[*
+            _Any ret = getPrototypeForMethod(signature.s);
+            if ( ret != null ) return ret;
+                
+        *]>
+        throw: ExceptionCannotGetMethod;
+    }
+    
+    @checkSetMethod
+    final fun setMethod: (String signature, Any method) {
+    }
+
+    public const Int defaultIdentNumber = 4
+
+    @javacode<*<
+       public Object getUnionElem() { return null; }
+       public boolean eq(Object other) { return this == other; }
+        static final String prototypeName = "Any";
+        public String getPrototypeName() { return prototypeName; }
+    >*>
+    
+
+end
+

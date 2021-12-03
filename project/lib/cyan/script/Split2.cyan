@@ -1,0 +1,16 @@
+package cyan.script
+
+//  (SumTuple<Double> eval: (Split2<Double>: Sin|Sqr, Cos|Sqr) eval: x) ) println  // print 1
+object Split2<T> extends Function<Function<T, T>, Function<T, T>, Function<T, Tuple<T, T>>
+    func eval: Function<T, T> f1, Function<T, T> f2 -> Function<T, Tuple<T, T> {
+        return { (: T elem -> Tuple<T, T> :) [. f1 eval: elem, f2 eval: elem .] }
+    }
+end
+
+
+/*
+   if Cyan allowed generic methods, we could write
+   
+   (x => (Split2<Double>: Sin|Sqr, Cos|Sqr) | SumTuple<Double>) println;
+   // this would always print 1
+*/

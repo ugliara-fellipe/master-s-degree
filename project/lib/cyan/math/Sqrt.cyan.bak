@@ -1,0 +1,9 @@
+package cyan.math
+
+object Sqr extends Function<Double, Double>
+
+    fun eval: Double x -> Double {
+        return Math sqrt: x
+    }
+
+end

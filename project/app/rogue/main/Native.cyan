@@ -1,0 +1,41 @@
+package main
+
+import cyan.math
+
+object Native
+  
+  func stringRepeat: String repeat, Int num -> String {
+    return repeat * (num - 1);
+    //@javacode<<<
+    //return new CyString(String.format("%0" + _num.n + "d", 0).replace("0", _repeat.s));
+    //>>>
+  }
+
+  func abs: Int value -> Double {
+    //return Math abs: (Double cast: value);
+    @javacode<<<
+    return new CyDouble(Math.abs(_value.n));
+    >>>
+  }
+    
+  func pow: Double value, Int exp -> Double {
+    @javacode<<<
+    return new CyDouble(Math.pow(_value.n, _exp.n));
+    >>>
+  }
+  
+  func sqrt: Double value -> Double {
+    //return Math sqrt: value;
+    @javacode<<<
+    return new CyDouble(Math.sqrt(_value.n));
+    >>>
+  }
+  
+  func exit {
+    @javacode<<<
+    System.exit(0);
+    >>>
+    return Nil;
+  }
+  
+end

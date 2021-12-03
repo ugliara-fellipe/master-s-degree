@@ -1,0 +1,5 @@
+package cyan.lang
+
+object CatchExit<T+>
+    @createCatchExit
+end

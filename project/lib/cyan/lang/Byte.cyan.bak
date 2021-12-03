@@ -1,0 +1,167 @@
+package cyan.lang
+
+public final object Byte
+
+	@javacode<<<
+	    public byte n;
+        public CyByte(byte n) { this.n = n; }
+	>>>
+	
+    fun ++ { @javacode<<< ++n; >>> }
+    fun -- { @javacode<<< --n; >>> }
+    fun +  (Byte other) -> Byte { @javacode<<< return new CyByte(n + _other.n); >>> }
+    fun -  (Byte other) -> Byte { @javacode<<< return new CyByte(n - _other.n); >>> }
+    fun *  (Byte other) -> Byte { @javacode<<< return new CyByte(n * _other.n); >>> }
+    fun /  (Byte other) -> Byte { @javacode<<< return new CyByte(n / _other.n); >>> }
+    fun %  (Byte other) -> Byte { @javacode<<< return new CyByte(n % _other.n); >>> }
+    fun <  (Byte other) -> Boolean { @javacode<<< return new CyBoolean(n <  _other.n); >>> }
+    fun <= (Byte other) -> Boolean { @javacode<<< return new CyBoolean(n <= _other.n); >>> }
+    fun >  (Byte other) -> Boolean { @javacode<<< return new CyBoolean(n >  _other.n); >>> }
+    fun >= (Byte other) -> Boolean { @javacode<<< return new CyBoolean(n >= _other.n); >>> }
+    fun == (Byte other) -> Boolean { @javacode<<< return new CyBoolean(n == _other.n); >>> }
+    fun != (Byte other) -> Boolean { @javacode<<< return new CyBoolean(n != _other.n); >>> }
+    
+   fun === (Byte other) -> Boolean { return self == other }
+   
+   fun <=> (Byte other) -> Int {  
+        if self < other { return -1 } 
+        else if self > other { return 1 }
+        else { 
+           return 0
+        }
+    }
+    fun  .. (Byte theEnd) -> Interval<Byte> {  
+        return Interval<Byte> new: self, theEnd
+    } 
+    fun ..< (Byte theEnd) -> Interval<Byte> {  
+        return Interval<Byte> new: self, (theEnd - 1B);
+    } 
+   
+    
+       // all unary operators are prefixed
+    fun -   -> Byte { @javacode<<< return new CyByte(-n); >>> }
+    fun +   -> Byte { @javacode<<< return this; >>> }
+        // and bit to bit
+    fun & (Byte other) -> Byte { @javacode<<< return new CyByte(n & _other.n); >>> }
+        // or bit to bit
+    fun | (Byte other) -> Byte { @javacode<<< return new CyByte(n | _other.n); >>> }
+        // exclusive or bit to bit
+        
+    fun => Function<Byte, Nil> f -> Byte {
+        f eval: self;
+        return self
+    }
+    
+    fun => Function<Byte, Byte> f -> Byte {
+        return f eval: self
+    }
+        
+        
+    fun ~| (Byte other) -> Byte { @javacode<<< return new CyByte(n ^ _other.n); >>> }
+        // binary not
+    fun ~ -> Byte { @javacode<<< return new CyByte(~n); >>> }
+	
+    fun cast: (Any other) -> Byte {
+        @javacode<<<<
+            if ( _other instanceof CyInt )
+                return new CyByte( (byte ) ((CyInt ) _other ).n );
+            else  if ( _other instanceof CyShort )
+                return new CyByte( (byte ) ((CyShort ) _other ).n );
+            else  if ( _other instanceof CyLong )
+                return new CyByte( (byte ) ((CyLong ) _other ).n );
+            else  if ( _other instanceof CyFloat )
+                return new CyByte( (byte ) ((CyFloat ) _other ).n );
+            else  if ( _other instanceof CyDouble )
+                return new CyByte( (byte ) ((CyDouble ) _other ).n );
+            else  if ( _other instanceof CyChar )
+                return new CyByte( (byte ) ((CyChar ) _other ).c );
+            else  if ( _other instanceof CyBoolean )
+                return new CyByte( (byte ) ((CyBoolean ) _other ).b );
+            else  if ( _other instanceof CyString )
+                return new CyByte( Byte.valueOf( ((CyString ) _other).s ).byteValue() );
+            else  if ( _other instanceof CyByte )
+                return ( CyByte ) _other ;
+            else
+                throw new _CastException();
+        >>>>
+    }
+	
+    fun asInt    -> Int { @javacode<<< return new CyInt( (int ) n ); >>> }
+    fun asShort  -> Short { @javacode<<< return new CyShort( (short) n ); >>> }
+    fun asLong   -> Long { @javacode<<< return new CyLong( (long) n); >>> }
+    fun asFloat  -> Float { @javacode<<< return new CyFloat( (float) n ); >>> }
+    fun asDouble -> Double { @javacode<<< return new CyDouble( (double ) n ); >>> }
+    fun asChar   -> Char { @javacode<<< return new CyChar( (char ) n); >>> }
+    fun asBoolean -> Boolean { @javacode<<< return new CyBoolean( (boolean ) n); >>> }
+    fun asString -> String { @javacode<<< return new CyString(n + ""); >>> }
+    fun to: (Byte max) do: (Function<Nil> b) { 
+        var Byte i = self;
+        while i <= max {
+            b eval;
+            ++i
+        }
+    }
+    fun to: (Byte max) do: (Function<Byte, Nil> b) { 
+        var Byte i = self;
+        while i <= max {
+            b eval: i;
+            ++i
+        }
+    }
+    
+       // injection method to be used with context object.
+       // the initial value is private to injectTo
+    fun to: (Byte max) do: (InjectObject<Byte> injectTo) {
+        var Byte i = self;
+        while i <= max {
+            injectTo eval: i;
+            ++i
+        }
+    }
+
+    
+    
+    fun repeat: Function<Nil> b {
+        var Byte i = 0Byte;
+        while i < self {
+            b eval;
+            ++i;
+        }
+    }
+    fun repeat: Function<Byte, Nil> b {
+        var Byte i = 0Byte;
+        while i < self {
+            b eval: i;
+            ++i;
+        }
+    }
+
+    fun to: (Byte max)
+        inject: (Byte initialValue)
+        into: (Function<Byte, Byte, Byte> b) -> Byte {
+        var Byte i = self;
+        var Byte total = initialValue;
+        while i <= max {
+            total = b eval: total, i;
+            ++i
+        };
+        return total
+    }
+
+    fun in: (Iterable<Byte> container) -> Boolean {
+        container foreach: {
+            (: Byte item :)
+            if self == item {
+                return true;
+            }
+        };
+        return false;
+    }
+    
+    fun in: Interval<Byte> inter -> Boolean {
+        return self >= inter first && self <= inter last
+    }
+    
+    
+end
+

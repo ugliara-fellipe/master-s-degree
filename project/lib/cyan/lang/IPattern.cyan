@@ -1,0 +1,6 @@
+package cyan.lang
+
+interface IPattern 
+    func ~= (String toMatch) -> Boolean 
+end
+

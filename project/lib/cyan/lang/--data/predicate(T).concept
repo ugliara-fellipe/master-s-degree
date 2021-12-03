@@ -1,0 +1,5 @@
+// based on http://en.cppreference.com/w/cpp/concept, I think
+
+T has [ 
+    func eval -> Boolean 
+]

@@ -1,0 +1,7 @@
+package cyan.lang
+
+public final object Tuple<T+> 
+    @createTuple
+end
+
+

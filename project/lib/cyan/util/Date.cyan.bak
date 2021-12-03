@@ -1,0 +1,5 @@
+package cyan.util
+
+object Date(public Int day, public Int month, public Int year)
+end
+

@@ -1,0 +1,86 @@
+package main
+
+object Player
+  
+  var String id
+  var Boolean isTurn
+  var Int turn
+  var Board board
+  var String selected
+  var Int status
+  var String message
+  
+  var Array< Figure > figures
+  
+  func init: String id, Board board {
+    self.id = id;
+    self.board = board;
+    self.turn = Const TURN;
+    self.isTurn = false;
+    self.status = Const GAME;
+    self.message = "Ready !";
+    self.selected = id ++ "W1";
+    self.figures = Array< Figure > new;
+  }
+  
+  func build {
+    self.figures add: (Figure new: id ++ "M1", Const MAGE, board, self);
+    self.figures add: (Figure new: id ++ "W1", Const WARRIOR, board, self);
+    self.figures add: (Figure new: id ++ "W2", Const WARRIOR, board, self);
+  }
+  
+  func getId -> String { 
+    return self.id;
+  }
+  
+  func getIsTurn -> Boolean { 
+    return self.isTurn;
+  }
+  
+  func setIsTurn: Boolean isTurn { 
+    self.isTurn = isTurn;
+  }
+  
+  func getTurn -> Int { 
+    return self.turn;
+  }
+  
+  func setTurn: Int turn { 
+    self.turn = turn;
+  }
+  
+  func getStatus -> Int { 
+    return self.status;
+  }
+  
+  func setStatus: Int status { 
+    self.status = status;
+  }
+  
+  func setMessage: String message {
+    self.message = message;
+  }
+  
+  func getMessage -> String { 
+    return self.message;
+  }
+  
+  func getSelected -> String {
+    return self.selected;
+  }
+  
+  func setSelected: String selected {
+    self.selected = selected;
+  }
+  
+  func getFigure: String id -> Figure|Nil {
+    var Figure|Nil result = Nil;
+    for fg in figures {
+      if (fg getId) == id {
+        result = fg;
+      }
+    }
+    return result;
+  }
+
+end

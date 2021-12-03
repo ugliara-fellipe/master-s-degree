@@ -1,0 +1,41 @@
+package cyan.lang
+
+/*
+    Of course, this prototype needs to be highly improved
+*/
+
+final object RegExpr extends Function<String, Boolean> implements IPattern
+
+    func init: String regExpr {
+        @javacode{*
+        pattern = java.util.regex.Pattern.compile(_regExpr.s);
+        *}
+        //self.regExpr = regExpr
+    }
+    
+    override
+    func ~= (String str) -> Boolean {
+        @javacode<+
+            return new CyBoolean( pattern.matcher(_str.s).matches() );
+        
+            //return new CyBoolean( java.util.regex.Pattern.matches(_regExpr.s, _str.s) );
+        +>
+    }
+    
+    override
+    func eval: String str -> Boolean {
+        @javacode{*
+            return new CyBoolean( pattern.matcher(_str.s).matches() );
+        *}
+    }
+    
+    func |> Function<String, Boolean> next -> Function<String, Boolean> {
+        ^{ (: String s -> Boolean :) ^ self eval: s && next eval: s; }
+    }
+    
+    //String regExpr    
+    
+    @javacode{*
+    java.util.regex.Pattern pattern;
+    *}
+end

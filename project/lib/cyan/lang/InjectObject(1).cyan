@@ -1,0 +1,8 @@
+package cyan.lang
+
+abstract object InjectObject<T> extends Function<T, Nil>
+    override
+    abstract func eval: T
+    abstract func result -> T
+end
+

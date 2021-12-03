@@ -1,0 +1,11 @@
+package cyan.script
+
+//  (Sum eval: (Split2: Sin|Sqr, Cos|Sqr) eval: x) ) println  // print 1
+object Split2<T> extends Function<T>
+    fun eval: Function<T, T> f1, Function<T, T> f2 -> Function<T, Tuple<T, T> {
+        return { (: T elem -> Tuple<T, T> :) [. f1 eval: elem, f2 eval: elem .] }
+    }
+end
+
+
+

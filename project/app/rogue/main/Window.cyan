@@ -1,0 +1,158 @@
+package main
+
+@javacode<<< 
+import java.awt.Color;
+import java.awt.Container;
+import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+>>>
+
+object Window
+
+  @javacode<<< 
+  static _Input _java_input;
+  
+  public static class Window extends JFrame implements ActionListener {
+
+    private JTextField inputCmd;
+    private JTextArea mapArea;
+    private JTextArea infoArea;
+    public static Window rogueWindow = new Window();
+
+    public Window() {
+      createGui();
+    }
+
+    public void createGui() {
+      setTitle("Rogue Treplica");
+
+      inputCmd = new JTextField();
+      inputCmd.addKeyListener(new KeyAdapter() {
+        public void keyTyped(KeyEvent e) {
+          char keyChar = e.getKeyChar();
+          if (Character.isLowerCase(keyChar)) {
+            e.setKeyChar(Character.toUpperCase(keyChar));
+          }
+        }
+
+      });
+      inputCmd.addActionListener(this);
+
+      _Const _java_const = new _Const();
+      mapArea = new JTextArea(((CyInt ) _java_const._MAP__HEIGHT()).n - 1, ((CyInt ) _java_const._MAP__WIDTH()).n );
+      mapArea.setEditable(false);
+      mapArea.setBackground(Color.WHITE);
+      mapArea.setForeground(Color.BLACK);
+      mapArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+
+      infoArea = new JTextArea(((CyInt ) _java_const._INFO__HEIGHT()).n - 1, ((CyInt ) _java_const._INFO__WIDTH()).n - 1);
+      infoArea.setEditable(false);
+      infoArea.setBackground(Color.WHITE);
+      infoArea.setForeground(Color.BLACK);
+      infoArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+
+      GridBagLayout gridBag = new GridBagLayout();
+      Container contentPaneMain = getContentPane();
+      contentPaneMain.setLayout(gridBag);
+
+      GridBagConstraints gridConsPanel = new GridBagConstraints();
+      gridConsPanel.gridwidth = GridBagConstraints.REMAINDER;
+      JPanel contentPane = new JPanel();
+      contentPane.setLayout(gridBag);
+      contentPaneMain.add(contentPane, gridConsPanel);
+
+      contentPane.add(mapArea);
+      contentPane.add(infoArea);
+
+      GridBagConstraints gridConsInput = new GridBagConstraints();
+      gridConsInput.fill = MAXIMIZED_HORIZ;
+      contentPaneMain.add(inputCmd, gridConsInput);
+    }
+
+    public void actionPerformed(ActionEvent evt) {
+      String text = inputCmd.getText();
+      try {
+        _java_input._event_1(new CyString(text));
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+      inputCmd.selectAll();
+    }
+
+    public static void build() {
+      rogueWindow.pack();
+      rogueWindow.addWindowListener(new WindowAdapter() {
+        public void windowClosing(WindowEvent e) {
+          System.exit(0);
+        }
+      });
+      rogueWindow.setVisible(true);
+    }
+
+    public void setTextMap(String text) {
+      mapArea.append(text);
+    }
+
+    public void cleanTextMap() {
+      mapArea.setText("");
+    }
+
+    public void setTextInfo(String text) {
+      infoArea.append(text);
+    }
+
+    public void cleanTextInfo() {
+      infoArea.setText("");
+    }
+  }
+  >>>
+
+  func build: Input input {
+    @javacode<<<
+    _java_input = _input;
+    Window.rogueWindow.build();
+    >>>
+    return Nil;
+  }
+
+  func setTextMap: String text {
+    @javacode<<<
+    Window.rogueWindow.setTextMap(((CyString ) _text).s);
+    >>>
+    return Nil;
+  }
+
+  func cleanTextMap {
+    @javacode<<<
+    Window.rogueWindow.cleanTextMap();
+    >>>
+    return Nil;
+  }
+
+  func setTextInfo: String text {
+    @javacode<<<
+    Window.rogueWindow.setTextInfo(((CyString ) _text).s);
+    >>>
+    return Nil;
+  }
+
+  func cleanTextInfo {
+    @javacode<<<
+    Window.rogueWindow.cleanTextInfo();
+    >>>
+    return Nil;
+  }
+
+end

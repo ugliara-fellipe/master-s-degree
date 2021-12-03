@@ -1,0 +1,6 @@
+package cyan.lang
+
+
+public final object ExceptionNumberFormat extends CyException
+end
+

@@ -1,0 +1,26 @@
+package main
+
+import treplica
+
+object Program    
+
+    func init {
+      Out println: "Program Init";
+    }
+    
+    func run: Array<String> args {
+        var local = ("/var/tmp/magic" ++ args[1]);
+        @treplicaInit( 2, 200, local )
+	      var t = Tested new; 
+
+        var read = ""; 
+        
+        while true { 
+          read = In readLine;
+          if read == "run" {
+            t perform;
+          }
+        }
+    } 
+
+end

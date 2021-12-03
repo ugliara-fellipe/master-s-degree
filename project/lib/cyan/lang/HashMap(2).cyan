@@ -1,0 +1,189 @@
+package cyan.lang
+
+object HashMap<K, V> implements IMap<K, V>
+
+    func init {
+        @javacode{*
+            hashMap = new java.util.HashMap<K, V>();
+        *}
+    }
+    
+    override
+    func iterator -> Iterator<Tuple<key, K, value, V>> = HashMapIterator<K, V>(self);
+    
+    override
+    func foreach: Function<Tuple<key, K, value, V>, Nil> f {
+        for elem in self {
+            f eval: elem;
+        }
+    }
+    
+
+    override
+    func [] at: K key -> Nil|V = self get: key;
+    
+    override
+    func [] at: K key put: V value -> Nil|V = self add: key, value;
+    
+    override
+    func get: K key -> Nil|V {
+        var Nil|V other;
+        var V v;
+        var Boolean isV = true;        
+        @javacode{*
+            _v = hashMap.get(_key);
+            if ( _v == null ) _isV = new CyBoolean(false);
+        *}
+        if isV { return v } else { return Nil }
+        
+    }
+    
+    override
+    func add: K key, V value -> Nil|V {
+        var Nil|V other;
+        var V v;
+        var Boolean isV = true;        
+        @javacode{*
+            _v = hashMap.put(_key, _value);
+            if ( _v == null ) _isV = new CyBoolean(false);
+        *}
+        if isV { return v } else { return Nil }
+        
+    }
+    
+    override
+    func containsKey: K key -> Boolean {
+        @javacode{*
+            return new CyBoolean(hashMap.containsKey(_key));
+        *}
+    }
+    
+    override
+    func containsValue: V value -> Boolean {
+        @javacode{*
+            return new CyBoolean(hashMap.containsValue(_value));
+        *}
+    }
+    
+    override
+    func isEmpty -> Boolean {
+        @javacode{*
+            return new CyBoolean(hashMap.isEmpty());
+        *}
+    }
+
+    override
+    func remove: K key -> Nil|V {
+        var V v;
+        var Boolean isV = true;        
+        @javacode{*
+            _v = hashMap.remove(_key);
+            if ( _v == null ) _isV = new CyBoolean(false);
+        *}
+        if isV { return v } else { return Nil }
+        
+    }
+
+    override
+    func size -> Int {
+        @javacode{*
+            return new CyInt(hashMap.size());
+        *}
+    }
+    
+    override
+    func clear {
+        @javacode{*
+            hashMap.clear();
+        *}
+        return Nil
+    }
+
+    override
+    func asSet -> Set<Tuple<key, K, value, V>> {
+        let s = Set<Tuple<key, K, value, V>> new;
+        let f = { (: K kk, V vv :) s add: [. key = kk, value = vv .] };
+        @javacode{*
+            for ( java.util.Map.Entry<K, V> entry : hashMap.entrySet() ) {
+                _f._eval_2( entry.getKey(), entry.getValue() );
+            }
+        *}
+        return s;
+        
+    }
+    
+
+    override
+    func asArray -> Array<Tuple<key, K, value, V>> {
+        let s = Array<Tuple<key, K, value, V>> new;
+        let f = { (: K kk, V vv :) s add: [. key = kk, value = vv .] };
+        @javacode{*
+            for ( java.util.Map.Entry<K, V> entry : hashMap.entrySet() ) {
+                _f._eval_2( entry.getKey(), entry.getValue() );
+            }
+        *}
+        return s;
+    }
+    
+    
+    override
+    func keySet -> Set<K> {
+        let s = Set<K> new;
+        // let f = { (: K kk :) s add: kk };
+        @javacode{*
+            for ( K key : hashMap.keySet() ) {
+                //_f._eval_1(key);
+                _s._add_1(key);
+            }
+        *}
+        return s;
+        
+    }
+    
+    override
+    func valueSet -> Set<V> {
+        let s = Set<V> new;
+        // let f = { (: V vv :) s add: vv };
+        @javacode{*
+            for ( V value : hashMap.values() ) {
+                //_f._eval_1(key);
+                _s._add_1(value);
+            }
+        *}
+        return s;
+        
+    }
+    
+    
+    override
+    func asString: (Int ident) -> String {
+        var String s = "";
+        for i in 1..ident  { s = s ++ " " }
+        s = s ++ "[ ";
+        
+        let Array<Tuple<key, K, value, V>> array = asArray;
+        
+        
+        var Int size2 = size;
+
+        var Int i = 0;
+        while i < size {
+            let Tuple<key, K, value, V> keyValue = array[i];
+            s = s ++ keyValue key ++ " -> " ++ keyValue value;
+            --size2;
+            if size2 > 0 { s = s ++ ", " }
+            ++i;
+        }        
+        s = s ++ " ]";
+        return s
+    }    
+    
+    
+    @javacode{*
+        java.util.HashMap<K, V> hashMap;
+        public java.util.HashMap<K, V> getHashMap() {
+            return hashMap;
+        }
+    *}
+end
+

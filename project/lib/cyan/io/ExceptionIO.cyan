@@ -1,0 +1,13 @@
+package cyan.io
+
+object ExceptionIO extends CyException
+    func init: String filename {
+        self._filename = filename
+    }
+    
+    func filename -> String = _filename;
+    
+    String _filename
+
+end
+

@@ -1,0 +1,172 @@
+package cyan.lang
+
+ final object Int
+	@javacode<<<
+	    public int n;
+        public CyInt(int n) { this.n = n; }
+	>>>
+    fun ++ { @javacode<<< ++n; >>> }
+    fun -- { @javacode<<< --n; >>> }
+    fun +  (Int other) -> Int { @javacode<<< return new CyInt(n + _other.n); >>> }
+    fun -  (Int other) -> Int { @javacode<<< return new CyInt(n - _other.n); >>> }
+    fun *  (Int other) -> Int { @javacode<<< return new CyInt(n * _other.n); >>> }
+    fun /  (Int other) -> Int { @javacode<<< return new CyInt(n / _other.n); >>> }
+    fun %  (Int other) -> Int { @javacode<<< return new CyInt(n % _other.n); >>> }
+    fun <  (Int other) -> Boolean { @javacode<<< return new CyBoolean(n <  _other.n); >>> }
+    fun <= (Int other) -> Boolean { @javacode<<< return new CyBoolean(n <= _other.n); >>> }
+    fun >  (Int other) -> Boolean { @javacode<<< return new CyBoolean(n >  _other.n); >>> }
+    fun >= (Int other) -> Boolean { @javacode<<< return new CyBoolean(n >= _other.n); >>> }
+    fun == (Int other) -> Boolean { @javacode<<< return new CyBoolean(n == _other.n); >>> }
+    fun != (Int other) -> Boolean { @javacode<<< return new CyBoolean(n != _other.n); >>> }
+    fun === (Int other) -> Boolean { return self == other }
+    
+    /*  return -1 if self < other, 0 if self == other, and 1 if self > other
+    */
+    fun <=> (Int other) -> Int {  
+        if self < other { return -1 } 
+        else if self > other { return 1 }
+        else { 
+           return 0
+        }
+    }
+    fun .. (Int theEnd) -> Interval<Int> {  
+        return Interval<Int> new: self, theEnd
+    } 
+    fun ..< (Int theEnd) -> Interval<Int> {  
+        return Interval<Int> new: self, (theEnd - 1);
+    } 
+
+       // all unary operators are prefixed
+    fun -  -> Int { @javacode<<< return new CyInt(-n); >>> }
+    fun +  -> Int { @javacode<<< return this; >>> }
+        // and bit to bit
+    fun & (Int other) -> Int { @javacode<<< return new CyInt(n & _other.n); >>> }
+        // or bit to bit
+    fun | (Int other) -> Int { @javacode<<< return new CyInt(n | _other.n); >>> }
+    
+    fun => Function<Int, Nil> f -> Int {
+        f eval: self;
+        return self
+    }
+    
+    fun => Function<Int, Int> f -> Int {
+        return f eval: self
+    }
+    
+    
+        // exclusive or bit to bit
+    fun ~| (Int other) -> Int { @javacode<<< return new CyInt(n ^ _other.n); >>> }
+        // binary not
+    fun ~ -> Int { @javacode<<< return new CyInt(~n); >>> }
+      // left shift. The same as << in Java
+    fun <.< (Int other) -> Int { @javacode<** return new CyInt(n << _other.n); **> }
+      // right shift. The same as >> in Java
+    fun >.> (Int other) -> Int { @javacode<** return new CyInt(n >> _other.n); **> }
+          // right shift. The same as >>> in Java
+    fun >.>> (Int other) -> Int { @javacode<** return new CyInt(n >>> _other.n); **> }
+
+
+    fun cast: (Any other) -> Int { 
+        @javacode<<<<
+            if ( _other instanceof CyByte ) 
+                return new CyInt( (int ) ((CyByte ) _other ).n );
+            else  if ( _other instanceof CyShort ) 
+                return new CyInt( (int ) ((CyShort ) _other ).n );
+            else  if ( _other instanceof CyLong ) 
+                return new CyInt( (int ) ((CyLong ) _other ).n );
+            else  if ( _other instanceof CyFloat ) 
+                return new CyInt( (int ) ((CyFloat ) _other ).n );
+            else  if ( _other instanceof CyDouble ) 
+                return new CyInt( (int ) ((CyDouble ) _other ).n );
+            else  if ( _other instanceof CyChar ) 
+                return new CyInt( (int ) ((CyChar ) _other ).c );
+            else  if ( _other instanceof CyBoolean ) 
+                return new CyInt( (int ) ((CyBoolean ) _other ).b );
+            else  if ( _other instanceof CyString ) 
+                return new CyInt( Integer.valueOf( ((CyString ) _other).s ).intValue() );
+            else  if ( _other instanceof CyInt) 
+                return (CyInt ) _other;
+            else
+                throw new _CastException();
+        >>>>
+    }
+    fun asByte   -> Byte { @javacode<<< return new CyByte( (byte) n ); >>> }
+    fun asShort  -> Short { @javacode<<< return new CyShort( (short) n ); >>> }
+    fun asLong -> Long { @javacode<<< return new CyLong( (long) n); >>> }
+    fun asFloat  -> Float { @javacode<<< return new CyFloat( (float) n ); >>> }
+    fun asDouble -> Double { @javacode<<< return new CyDouble( (double ) n ); >>> }
+    fun asChar   -> Char { @javacode<<< return new CyChar( (char ) n); >>> }
+    fun asBoolean -> Boolean { @javacode<<< return new CyBoolean( (boolean ) n); >>> }
+    fun asString -> String { @javacode<<< return new CyString(n + ""); >>> }
+
+    fun to: (Int max) do: (Function<Nil> b) {
+        var Int i = self;
+        while i <= max {
+            b eval;
+            ++i
+        }
+    }
+    fun to: (Int max) do: (Function<Int, Nil> b) {
+        var Int i = self;
+        while i <= max {
+            b eval: i;
+            ++i
+        }
+    }
+
+       // injection method to be used with context object.
+       // the initial value is private to injectTo
+    fun to: (Int max) do: (InjectObject<Int> injectTo) {
+        var Int i = self;
+        while i <= max {
+            injectTo eval: i;
+            ++i
+        };
+    }
+    
+    
+    fun repeat: Function<Nil> b {
+        var Int i = 0;
+        while i < self {
+            b eval;
+            ++i;
+        }
+    }
+    fun repeat: Function<Int, Nil> b {
+        var i = 0;
+        while i < self {
+            b eval: i;
+            ++i;
+        }
+    }
+
+    fun to: (Int max)
+        inject: (Int initialValue)
+        into: (Function<Int, Int, Int> b) -> Int {
+        
+        var Int i = self;
+        var Int total = initialValue;
+        while i <= max {
+            total = b eval: total, i;
+            ++i
+        };
+        return total
+    }
+
+    fun in: (Iterable<Int> container) -> Boolean {
+        container foreach: {
+            (: Int item :)
+            if self == item {
+                return true;
+            }
+        };
+        return false;
+    }
+
+    fun in: Interval<Int> inter -> Boolean {
+        return self >= inter first && self <= inter last
+    }
+    
+    
+end
+

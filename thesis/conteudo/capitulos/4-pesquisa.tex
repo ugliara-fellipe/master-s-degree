@@ -1,0 +1,702 @@
+\chapter{Replicação Usando Metaprogramação}
+\label{cap:pesquisa}
+
+Essa pesquisa propõe a escrita de componentes usando metaprogramação para auxiliar no desenvolvimento de programas distribuídos que usam replicação ativa. Esses componentes serão usados para encapsular os trechos de código referentes ao comportamento distribuído~\cite{tourwe2003identifying} e para verificar se o código produzido respeita as restrições necessárias a esses programas~\cite{filman2002source}. São usados o \emph{framework} Treplica e a linguagem de programação Cyan para demonstrar essa abordagem. Cyan possui estruturas de metaprogramação que permitem inspecionar e automatizar a escrita de código fonte.
+
+\section{Framework Treplica Orientado a Protótipos}
+\label{sec:treplicaframe}
+
+Treplica é um \emph{framework}~\cite{vieira2010implementation} usado para desenvolver aplicações distribuídas. Ele implementa um ambiente de replicação ativa baseado em máquinas de estado. Os estados são contextos de Treplica e guardam os valores da aplicação que serão replicados. As transições entre os estados são ações de Treplica e manipulam os valores mantidos pelo contexto. O histórico de transições realizadas durante a execução da aplicação também é mantido para que novas instâncias criadas possam ser atualizadas para o estado atual da aplicação. Para isso, a nova instância executa todas as transições do histórico, e ao final dessas execuções, a instância terá o mesmo contexto que as outras réplicas. Isso acontece porque a nova réplica partiu do mesmo estado inicial e realizou todas as transições executadas até o momento. Treplica usa o algoritmo Paxos~\cite{lamport2006fast} para realizar a replicação e fornece ao programador uma abstração de fila persistente ordenada.
+
+Replicação não faz parte dos requisitos funcionais das aplicações, por esse motivo Treplica tenta fornecer interfaces que tornam o mecanismo de replicação transparente aos desenvolvedores~\cite{vieira2010implementation}. A tarefa de criar novas aplicações pode ser separada em duas etapas: uma etapa de definição do contexto da aplicação que determina quais dados serão replicados, e uma etapa para definir quais métodos desse contexto devem funcionar como ações de treplica. 
+
+Para desenvolver aplicações em Cyan usando o \emph{framework} Treplica, foi implementado um pacote Cyan que incorpora a biblioteca Java de Treplica. Essa seção mostra como esse pacote deve ser usado para desenvolver uma aplicação replicada em Cyan. A implementação dos protótipos \srcstyle{Context}, \srcstyle{Action} e \srcstyle{Treplica} que pertencem a esse pacote são mostradas na Seção~\ref{sec:packtrepcyan}. Esses protótipos encapsulam as classes Java de Treplica que foram mostradas na Seção~\ref{sec:treplicajavaint}. A classe \srcstyle{StateMachine} é encapsulada pelo protótipo \srcstyle{Treplica}, a classe \srcstyle{Action} pelo protótipo \srcstyle{Action} e a classe \srcstyle{Serializable} pelo protótipo \srcstyle{Context}.
+
+O protótipo que representa o contexto da aplicação deve estender \srcstyle{Context}, isso garante que esse protótipo seja seriável (\emph{serializable}). Essa propriedade permite que os métodos definidos como ações possam converter os dados em texto, para que esses dados possam ser compartilhados com as demais réplicas. Essa abordagem evita problemas de compatibilidade entre sistemas, pois o formato texto é padronizado.
+
+Os protótipos que representam as ações devem estender \srcstyle{Action} e são responsáveis pela transição entre os estados da aplicação. Eles manipulam o contexto da aplicação por meio do método \srcstyle{executeOn:}. Esse método funciona como uma casca para a chamada do método que deve ser replicado. Esses protótipos também são seriáveis para que Treplica possa enviar cópias dessa ação às demais réplicas. Quando uma ação é executada, todas as réplicas recebem uma cópia dessa ação e cada uma delas executa sua cópia. Desse modo todas as réplicas mantêm seu estado atualizado a cada ação executada pela aplicação.
+
+\begin{lstlisting}[language=Java, caption={Exemplo de protótipo que estende \textbf{Context} de Treplica}, label={cod:TreplicaDados}]
+package main
+
+import treplica
+
+object Info extends Context
+  var String text
+
+  func init { 
+    self.text = "";
+  }
+  
+  func setText: String text {
+    self.text = text;
+  }
+  
+  func getText -> String {
+    return self.text;
+  }
+end
+\end{lstlisting}
+
+A aplicação da Seção~\ref{sec:treplicajavaint} será reimplementada aqui usando o pacote Treplica de Cyan. Os Códigos-Fonte~\ref{cod:TreplicaDadosAp},~\ref{cod:TreplicaActionAp} e~\ref{cod:TreplicaMainAp} em Java são implementados em Cyan nos Códigos-Fonte~\ref{cod:TreplicaDados},~\ref{cod:TreplicaAction} e~\ref{cod:TreplicaMain} respectivamente. No Códigos-Fonte~\ref{cod:TreplicaDados} a variável de instância \srcstyle{number} não foi considerada. No Código-Fonte~\ref{cod:TreplicaDados} é definido o contexto dessa aplicação, esse protótipo recebe o nome de \srcstyle{Info} e estende \srcstyle{Context}. Ele contém a variável \srcstyle{text} do tipo \srcstyle{String}. Podemos considerar que o estado dessa aplicação é composto por essa variável, esse estado pode ser alterado usando o método \srcstyle{setText} desse protótipo.
+
+A ação que manipula o valor da variável \srcstyle{text} está definida no Código-Fonte~\ref{cod:TreplicaAction}. O protótipo desse código recebe o nome de \srcstyle{UpdateAction}, e ele é uma casca para a chamada do método \srcstyle{setText} de \srcstyle{Info}. O protótipo \srcstyle{UpdateAction} estende \srcstyle{Action} para representar uma ação de Treplica e implementa o método \srcstyle{executeOn} chamando \srcstyle{setText} para atualizar \srcstyle{text}. A ação também é seriável, por isso ela pode ser repassada por Treplica a todas as réplicas. Isso não seria possível de ser realizado com uma chamada direta ao método \srcstyle{setText}. Os parâmetros do método chamado pela ação são representados como variáveis de \srcstyle{UpdateAction} para que sejam serializados junto com a ação. Assim, as réplicas que receberem essa ação podem chamar o mesmo método com os mesmos parâmetros.
+
+\begin{lstlisting}[language=Java, caption={Protótipo que implementa uma transição}, label={cod:TreplicaAction}]
+package main
+import treplica
+
+object UpdateAction extends Action
+  var String updateText
+
+  func init: String text { self.updateText = text; }
+
+  func executeOn: Context context {
+    var info = Info cast: context;
+    info setText: self.updateText;
+  }
+end
+\end{lstlisting}
+
+O Código-Fonte~\ref{cod:TreplicaMain} define o método \srcstyle{run} do protótipo \srcstyle{Program}. Esse é o primeiro método a ser chamado quando a aplicação for executada. Na Linha 8 um objeto do tipo \srcstyle{Treplica} é instanciado e na Linha 9 a máquina de estados recebe o contexto \srcstyle{info}. Depois da inicialização, para executar uma \srcstyle{Action}, o método \srcstyle{execute} do protótipo \srcstyle{Treplica} deve ser chamado. O método \srcstyle{execute:} recebe um objeto do tipo \srcstyle{Action} como parâmetro, por meio da variável \srcstyle{action}. Esse método serializa a ação e envia uma cópia para cada réplica. Quando a ação for executada por cada réplica, ela chamará o método \srcstyle{executeOn:} que modifica o valor da variável \srcstyle{text} do objeto \srcstyle{info} daquela réplica. 
+
+\begin{lstlisting}[language=Java, caption={Configuração e execução de Treplica}, label={cod:TreplicaMain}]
+package main
+import treplica
+
+object Program
+  func run: Array<String> args {
+    let info = Info new;
+    let treplica = Treplica new;
+    treplica runMachine: info numberProcess: 3
+             rtt: 200 path: "/var/tmp/magic" ++ args[1];
+    let action = UpdateAction new: "text";
+    if args[1] == "1" {
+      treplica execute: action;
+    }
+  }
+end
+\end{lstlisting}
+
+O diagrama de sequência da Figura~\ref{fig:trepexecexamplecyan} mostra o fluxo de execução dessa aplicação. As réplicas \textbf{A} e \textbf{B} iniciam a execução pelo método \srcstyle{run} da classe \srcstyle{Program}. O contexto da aplicação (\srcstyle{Info}) e a máquina de estados de Treplica (\srcstyle{Treplica}) têm seus objetos instanciados por esse método. Em seguida, a \textbf{Réplica A} chama o método \srcstyle{execute:} de Treplica que irá executar a ação \srcstyle{UpdateAction}. Treplica replica essa chamada para a \textbf{Réplica B} e executa a ação replicada em ambas as réplicas (\srcstyle{executeOn:}).
+
+\begin{figure}[H]
+	\centering
+	\begin{sequencediagram}[font=\fontsize{0.28cm}{0.31cm}\selectfont\ttfamily]
+		\draw (5.6,-1)  node[right] {\small Réplica A};
+		\draw (8.3,-1)  node[right] {\small Réplica B};
+		\draw (8,0) -- (8,-4.8);
+        \draw (8,-5.8) -- (8,-10.3);
+		%\draw (8,-5.8) -- (8,-8.8);
+		%\draw (8,-9.5) -- (8,-10.3);
+		\newthread{InstAMain}{Program}
+		\newinst{InstAInfo}{Info}
+		\newinst{InstAUpdate}{UpdateAction}
+		\newinst{InstAState}{Treplica}
+		
+		\newinst[0.6]{InstBState}{Treplica}
+		\newinst{InstBUpdate}{UpdateAction}
+		\newinst{InstBInfo}{Info}
+		\newthread{InstBMain}{Program}
+		
+		\begin{call}{InstAMain}{Info new}{InstAInfo}{info} \end{call}
+        \begin{call}{InstAMain}{Treplica new}{InstAState}{treplica} \end{call}
+		\begin{call}{InstAMain}{runMachine:}{InstAState}{} \end{call}
+		
+		\prelevel \prelevel \prelevel \prelevel \prelevel \prelevel
+		
+		\begin{call}{InstBMain}{Info new}{InstBInfo}{info} \end{call}
+		\begin{call}{InstBMain}{Treplica new}{InstBState}{treplica} \end{call}
+		\begin{call}{InstBMain}{runMachine:}{InstBState}{} \end{call}	
+            
+		\begin{call}{InstAMain}{execute:}{InstAState}{}
+			\postlevel
+			\begin{call}{InstAState}{executeOn:}{InstAUpdate}{} 
+				\begin{call}{InstAUpdate}{setText:}{InstAInfo}{} \end{call}
+			\end{call}
+		
+			\prelevel \prelevel \prelevel 
+			\prelevel \prelevel  
+		
+			\begin{messcall}{InstAState}{replicação}{InstBState}{}
+				\postlevel
+				\begin{call}{InstBState}{executeOn:}{InstBUpdate}{} 
+					\begin{call}{InstBUpdate}{setText:}{InstBInfo}{} \end{call}
+				\end{call}
+			\end{messcall}
+		\end{call}
+	\end{sequencediagram}
+	\caption{Execução do exemplo de Treplica em Cyan}
+	\label{fig:trepexecexamplecyan}
+\end{figure}
+
+Na execução do programa, cada réplica receberá um número como argumento de modo incremental. Se forem executadas duas réplicas, a primeira réplica executada irá receber o número \srcstyle{1} e a segunda réplica o número \srcstyle{2}. De modo que a réplica que receber o número \srcstyle{1} como argumento irá executar a ação de Treplica que será copiada às outras réplicas. As réplicas iniciam a execução pelo método \srcstyle{run:} e são associadas à máquina de estado de Treplica pelo método \srcstyle{runMachine:}. A máquina de estados de Treplica é responsável por copiar as ações entre as réplicas associadas. 
+
+\subsection{Não Determinismo de Data e Hora}
+\label{sec:nddatahora}
+
+O Treplica requer adequada atenção à forma como as aplicações são implementadas, devido às inconsistências que são resultado de um código que não respeite as restrições impostas pelo modelo de replicação adotado. Um exemplo é a chamada de métodos não deterministas dentro das transições. O protótipo \srcstyle{UpdateAction} chama o método \srcstyle{setText:}, caso essa função faça uso de um método não determinista como \srcstyle{currentTime}, teremos um problema de consistência de valores entre as réplicas de \srcstyle{Info}. Esse protótipo será alterado para servir de exemplo. O Código-Fonte~\ref{cod:PropostaConsistencia} mostra o método \srcstyle{setText:}, que ao usar o método \srcstyle{currentTime}, se torna não determinista.
+
+\begin{lstlisting}[language=Java, caption={Exemplo de método \textbf{setText:} não determinista}, label={cod:PropostaConsistencia}] 
+...
+object Info extends Context
+  ...
+  func setText: String text {
+    var date = System currentTime asString;
+    self.text = text ++ date;
+  }
+  ...
+end
+\end{lstlisting}
+  
+Essa alteração causa um problema de consistência, pois \srcstyle{info} poderá assumir um valor diferente cada vez que o método \srcstyle{executeOn:} de uma instância de \srcstyle{UpdateAction} for chamado. Essa propriedade não determinista do método \srcstyle{currentTime} pode levar a uma divergência entre os valores atribuídos a \srcstyle{text} em cada réplica, pois cada réplica vai chamar a ação uma vez e o resultado obtido pode ser diferente em cada chamada.
+
+Uma solução para esse problema é realizar a operação não determinista antes de criar a instância de \srcstyle{UpdateAction}. O resultado dessa operação será passado à instância em sua inicialização. Desse modo o resultado da operação se torna um valor fixo que será copiado para as outras réplicas. Ao invés da ação realizar a operação não determinista, ela só recebe o resultado dessa ação e o repassa às outras réplicas. O Código-Fonte~\ref{cod:PropostaConsistenciaFix} mostra a implementação determinista dessa ação.
+
+\begin{lstlisting}[language=Java, caption={Exemplo ação determinista}, label={cod:PropostaConsistenciaFix}]
+object UpdateAction extends Action
+  var String date
+  var String updateText
+  
+  func init: String text, String date {
+  	self.date = date;
+  	self.updateText = text;
+  }
+  
+  func executeOn: Context context {
+    var info = Info cast: context;
+    info setText: self.updateText ++ self.date;
+  }
+end
+\end{lstlisting}
+
+O Código-Fonte~\ref{cod:PropostaConsistenciaUse} cria um objeto \srcstyle{date} que recebe a data atual do sistema. Em seguida a variável \srcstyle{action} recebe uma instância do protótipo \srcstyle{UpdateAction} que foi inicializada com o valor da variável \srcstyle{date}. Esse valor fixo será atribuído às outras réplicas pela ação \srcstyle{UpdateAction} quando ela for replicada.
+
+\begin{lstlisting}[language=Java, caption={Exemplo de construção da ação determinista}, label={cod:PropostaConsistenciaUse}]
+var date = System currentTime asString;
+var action = UpdateAction new: "text", date;
+\end{lstlisting}
+
+\subsection{Incorporação de Treplica em um Pacote Cyan}
+\label{sec:packtrepcyan}
+
+O \emph{framework} Treplica foi desenvolvido em Java e integrado a um pacote de Cyan para que ele possa ser usado por aplicações escritas em Cyan. Essa implementação consistiu de protótipos em Cyan que fazem chamadas diretas ao \emph{framework} Treplica desenvolvido em Java. Essa implementação foi realizada usando a construção de linguagem \srcstyle{@javacode}, como mostrado no Código-Fonte~\ref{cod:JavaCyanImport} da Seção~\ref{sec:cyanlibapp}.
+
+O código-fonte dentro da construção \srcstyle{@javacode} está em Java e o restante do código-fonte em Cyan. Uma variável \texttt{rtt} declarada no código-fonte em Cyan pode ser referenciada no trecho de Java (dentro do escopo) como \texttt{\_rtt}. 
+
+O Código-Fonte~\ref{cod:TCyanContext} define o protótipo \srcstyle{Context} que representa um contexto de Treplica. Todo contexto de Treplica deve implementar a interface \srcstyle{Serializable} de Java. Esse protótipo também contém uma variável que recebe uma instância do tipo \srcstyle{Treplica}. A atribuição dessa variável ocorre de forma cruzada, a instância de \srcstyle{Context} é referenciada pela instância de \srcstyle{Treplica}, e o mesmo ocorre com a instância de \srcstyle{Treplica} que é referenciada pela instância de \srcstyle{Context}. Essa referência cruzada irá permitir que os metaobjetos transformem um método tradicional em um método replicado, como será mostrado na Seção~\ref{sec:treplicacyanmetasecret}.
+
+\begin{lstlisting}[language=Java, caption={Código Fonte de \textbf{Context}}, label={cod:TCyanContext}]
+package treplica
+
+@javacode<<< import java.io.Serializable; >>>
+
+@javaImplements(Serializable)
+abstract object Context
+  var Treplica treplica;
+
+  func init {
+    @javacode<<< _treplica = null; >>>
+  }
+
+  func setTreplica: (Treplica tr) { treplica = tr; }
+
+  func getTreplica -> Treplica { return treplica; }
+end
+\end{lstlisting}
+
+O protótipo \srcstyle{Treplica} mostrado no Código-Fonte~\ref{cod:TCyanTreplica} expõe a máquina de estados de Treplica implementada em Java para as aplicações em Cyan. Ele contém a variável \srcstyle{stateMachine} que é iniciada com uma instância da máquina de estados de Treplica. Essa atribuição é feita pelo método \srcstyle{runMachine} que recebe um contexto de Treplica e cria a máquina de estados usando esse contexto e alguns parâmetros de configuração. 
+
+Depois que a instância de Treplica for inicializada é possível usar o método \srcstyle{getState} para acessar o contexto que foi passado à função \srcstyle{runMachine}. O último método desse protótipo é usado para executar as ações de Treplica, ele deve receber uma ação que possa ser associada ao contexto com o qual a instância desse protótipo foi inicializada. Na chamada do método \srcstyle{execute:}, deve ser passada a ele uma instância da ação que se deseja executar. Todos os métodos do protótipo \srcstyle{Treplica} foram implementados para que chamem diretamente os métodos da máquina de estados de Treplica em Java.
+
+\vspace{1cm} 
+
+\begin{lstlisting}[language=Java, caption={Código Fonte de \textbf{Treplica}}, label={cod:TCyanTreplica},float]
+package treplica
+
+@javacode<<< 
+import java.io.Serializable;
+import br.unicamp.treplica.StateMachine;
+>>>
+
+object Treplica
+  @javacode<<< public static StateMachine stateMachine; >>>
+  
+  func init { ... }
+
+  func runMachine: (Context context) numberProcess: (Int nProcesses) 
+      rtt: (Int rtt) path: (String stableMedia) {
+    @javacode<<<
+    try {        
+      stateMachine = StateMachine.createPaxosSM( 
+        (Serializable) _context,((CyInt ) _rtt).n, ((CyInt ) 
+        _nProcesses).n, false, ((CyString ) _stableMedia).s);
+    } catch (Exception p) {
+      ...
+    }        
+    >>>
+    return Nil
+  }
+
+  func getState -> Context {  
+    @javacode<<<
+    _Context result;
+    result = (_Context)stateMachine.getState();      
+    return result;        
+    >>>
+  }
+
+  func execute: (Action action) -> Dyn {    
+    @javacode<<<
+    try { 
+      return stateMachine.execute(_action); 
+    } catch (Exception p) {
+      ...
+    }        
+    >>>
+    return Nil
+  }
+end
+
+\end{lstlisting}
+
+As ações de Treplica herdam o protótipo \srcstyle{Action} mostrado no Código-Fonte~\ref{cod:TCyanAction}. Esse protótipo implementa as interfaces \srcstyle{Serializable} e \srcstyle{Action} de Java. A classe \srcstyle{Action} pertencente à Treplica possui um método \srcstyle{executeOn} que em Java recebe um contexto como parâmetro. O método \srcstyle{executeOn} em Java que é uma redefinição de um método da interface \srcstyle{Action} em Java foi redefinido no protótipo \srcstyle{Action} de Cyan, de modo que quando chamado, o fluxo de execução passe ao método \srcstyle{\_executeOn\_1} de Java. O método \srcstyle{executeOn:} de Cyan depois de compilado recebe o nome de \srcstyle{\_executeOn\_1}, portanto o método abstrato \srcstyle{executeOn:} de Cyan será chamado quando o método \srcstyle{executeOn} de Java for chamado. O protótipo que herda \srcstyle{Action} de Cyan é responsável por implementar o método abstrato \srcstyle{executeOn:}. Assim essa implementação do método abstrato será chamada pelo método \srcstyle{executeOn} de Java.
+
+\begin{lstlisting}[language=Java, caption={Código Fonte de \textbf{Action}}, label={cod:TCyanAction}]
+package treplica
+
+@javacode<<<
+import java.io.Serializable;
+import br.unicamp.treplica.Action;
+>>>
+
+@javaImplements(Action)
+@javaImplements(Serializable)
+abstract object Action
+  func init {
+  }
+
+  @javacode<<<
+  @Override 
+  public Object executeOn(Object stateMachine) {
+    return _executeOn_1( (_Context)stateMachine );
+  }
+  >>>
+
+  abstract func executeOn: Context context -> Dyn
+end
+
+\end{lstlisting}
+
+\section{Usando os Metaobjetos de Treplica}
+\label{sec:treplicacyanmeta}
+
+Aplicações replicadas desenvolvidas usando Treplica precisam da criação de um protótipo que represente o contexto que será replicado, e de ações que representam as chamadas de métodos deste contexto. Em Treplica, para cada nova ação é necessário criar um novo protótipo que estenda o protótipo \srcstyle{Action}. Portanto, o aumento do número de ações leva a um aumento do número de protótipos a serem criados. A complexidade desses protótipos também muda em função do número de parâmetros necessários à ação; quanto mais parâmetros, maior será o código e a complexidade do protótipo. Esse processo repetitivo de criação de ações pode tornar o código-fonte propenso a falhas.
+
+Ao criar protótipos que estendem \srcstyle{Action}, podemos convencionar que cada protótipo irá replicar um método único do contexto da aplicação. O protótipo \srcstyle{UpdateAction} do Código-Fonte~\ref{cod:TreplicaAction} é um modelo que atende a essa convenção. Esse protótipo replica a chamada do método \srcstyle{setText:} do contexto do Código-Fonte~\ref{cod:TreplicaDados}.
+
+Para que os protótipos respeitem essa convenção, eles devem ter um construtor que irá receber os parâmetros do método replicado, variáveis de instância que irão armazenar os valores recebidos pelo construtor e o método \srcstyle{executeOn:}, que chamará o método replicado passando as variáveis de instância atribuídas pelo construtor. Seguindo essa convenção foi projetado o metaobjeto \srcstyle{treplicaAction} para criar, durante a compilação, os protótipos que herdam de \srcstyle{Action}. Se esse código-fonte gerado pelo metaobjeto fosse implementado por um desenvolvedor poderia acabar contendo falhas devido à repetição envolvida nessa implementação.
+
+O metaobjeto \srcstyle{treplicaAction} é usado no Código-Fonte~\ref{cod:TreplicaDadosMeta} para anotar o método \srcstyle{setText:}. Durante a compilação do protótipo \srcstyle{Info} uma nova ação de Treplica é gerada com base no método \srcstyle{setText:}. Esse metaobjeto cria um protótipo similar ao mostrado no Código-Fonte~\ref{cod:TreplicaAction} e adiciona métodos ao protótipo \srcstyle{Info}, que permitem replicar as chamadas do método \srcstyle{setText:} de modo direto, como mostrado na Linha 12 do Código-Fonte~\ref{cod:TreplicaMainMeta}. O protótipo \srcstyle{Info} modificado é mostrado no Código-Fonte~\ref{cod:InfoChange} da Seção~\ref{sec:treplicacyanmetasecret}.
+
+Essa chamada direta a um método que será replicado consiste em remover a necessidade de chamar o método \srcstyle{execute} (Linha 13 do Código-Fonte~\ref{cod:TreplicaMain}) passando a ação que representa esse método \srcstyle{setText:}. A chamada ao método \srcstyle{execute} é incorporada ao contexto que possui o método replicado. O código-fonte gerado pelo metaobjeto que permite chamar um método replicado diretamente é mostrado na Seção~\ref{sec:treplicacyanmetasecret}.
+
+A verificação de não determinismo em métodos replicados é uma característica secundária do metaobjeto \srcstyle{treplicaAction}. Durante a compilação, um método do metaobjeto percorre as instruções do método anotado em busca de chamadas a métodos  não deterministas. Isto é feito de forma recursiva.
+
+Os métodos considerados não deterministas são definidos pelo desenvolvedor por meio de arquivos. Nesses arquivos é possível definir quais chamadas de métodos não deterministas devem ser substituídos durante a compilação por outras chamadas de métodos deterministas. Os detalhes são explicados na Seção~\ref{sec:trcyndmeta}.
+
+\begin{lstlisting}[language=Java, caption={\textbf{Action} usando Metaobjeto}, label={cod:TreplicaDadosMeta},float]
+...  
+object Info extends Context
+  var String text
+  ...
+  @treplicaAction
+  func setText: String text {
+    self.text = text;
+  }
+  ...
+end
+\end{lstlisting}
+
+A criação e a configuração de Treplica também são realizadas de forma padronizada: um contexto deve ser instanciado e passado à Treplica em seu construtor. Sua inicialização é feita pela chamada do método \srcstyle{runMachine} do objeto \srcstyle{Treplica}, como mostrado nas Linhas 9 e 10 do Código-Fonte~\ref{cod:TreplicaMain}. O metaobjeto \srcstyle{treplicaInit} foi projetado para iniciar o \emph{framework} e vinculá-lo a uma instância de objeto criada localmente. Esse metaobjeto é usado para anotar variáveis que estendam \srcstyle{Context}. Na Linha 9 do Código-Fonte~\ref{cod:TreplicaMainMeta}, \srcstyle{treplicaInit} anota a declaração da variável \srcstyle{info}. Esse metaobjeto produz uma nova versão da declaração do método \srcstyle{run}, que cria uma instância de \srcstyle{Treplica} e atribui o objeto de \srcstyle{info} a essa instância, similar ao método \srcstyle{run} do Código-Fonte~\ref{cod:TreplicaMain}. A versão do método \srcstyle{run} produzida pelo metaobjeto será mostrada no Código-Fonte~\ref{cod:InitChange} na Seção~\ref{sec:trcyndmetainitsec}.
+
+Usar os metaobjetos \srcstyle{treplicaInit} e \srcstyle{treplicaAction} reduz a quantidade e a complexidade do código produzido durante o desenvolvimento de uma aplicação replicada. Isso torna a aplicação menos propensa a falhas, o oposto do que ocorre na Seção~\ref{sec:treplicaframe}, que mostra o desenvolvimento de uma aplicação replicada que não usa metaprogramação. O código-fonte implementado usando esses metaobjetos fica parecido com a implementação de um código-fonte não replicado se as anotações forem removidas. Isso permite implementar um código-fonte mais transparente por ocultar a replicação do desenvolvedor. 
+
+\begin{lstlisting}[language=Java, caption={Configuração de Treplica usando metaobjetos}, label={cod:TreplicaMainMeta}]
+package main
+
+import treplica
+
+object Program 
+  func run: Array<String> args {
+    var local = "/var/tmp/magic" ++ args[1];
+
+    @treplicaInit( 3, 200, local )
+    var info = Info new;
+    
+    if args[1] == "1" {
+      info setText: "text";
+    }
+  }
+end
+\end{lstlisting}
+
+\section{Implementação dos Metaobjetos de Treplica}
+\label{sec:treplicacyanmetasecret}
+
+Esta seção descreve como os metaobjetos \srcstyle{treplicaAction} e \srcstyle{treplicaInit} foram implementados e mostra os códigos-fonte produzidos por eles durante a compilação. O código-fonte implementado é mostrado por completo no Apêndice~\ref{apd:metaobjetos}, e no decorrer dessa seção, trechos desse código-fonte são utilizados. Os trechos de códigos-fonte que foram extraídos do Apêndice~\ref{apd:metaobjetos} são marcados com uma borda dupla.
+
+As classes dos metaobjetos \srcstyle{treplicaAction} e \srcstyle{treplicaInit} herdam da classe \srcstyle{CyanMetaobjectWithAt} e implementam interfaces do \emph{PMO} de Cyan. A classe herdada e essas interfaces permitem que esses metaobjetos participem de etapas da compilação. Além dessa classe existem outras que podem ser herdadas, como explicado na Seção~\ref{sec:cyanmtobstep}.
+
+Toda classe de metaobjeto que herda de \srcstyle{CyanMetaobjectWithAt} deve redefinir o método \srcstyle{getName} para que ele retorne o nome da anotação com que esse metaobjeto deve ser associado. Quando o compilador encontra uma anotação no programa que está sendo compilado, ele procura por um metaobjeto que possa ser associado. Se não existir nenhum metaobjeto que possa ser associado à anotação, o compilador mostrará um erro de compilação. A implementação do método \srcstyle{mayBeAttachedList} herdado de \srcstyle{CyanMetaobjectWithAt} pelas classes dos metaobjetos define onde os metaobjetos podem ser acoplados. No caso do metaobjeto \srcstyle{treplicaAction} implementado pela classe \srcstyle{CyanMetaobjectTreplicaAction}, o método \srcstyle{mayBeAttachedList} retorna \srcstyle{AttachedDeclarationKind.METHOD\_DEC} para indicar que ele deve ser atrelado somente a declarações de métodos. O trecho de Código-Fonte~\ref{cod:CdActionApReg} mostra a implementação dos métodos \srcstyle{getName} e \srcstyle{mayBeAttachedList} no metaobjeto \srcstyle{treplicaAction}. 
+
+Os exemplos e códigos-fonte dessa seção foram desenvolvidos para uma versão antiga do compilador de Cyan. Para que esse código-fonte possa ser usado com versões recentes do compilador, algumas alterações são necessárias. O endereço eletrônico com o compilador de Cyan e os arquivos usados nessa pesquisa são mostrados na Conclusão.
+
+\begin{lstlisting}[language=Java, caption={Métodos de \textbf{CyanMetaobjectTreplicaAction}}, label={cod:CdActionApReg}, frame=TLBR]
+@Override
+public String getName() {
+	return "treplicaAction";
+}
+
+@Override
+public DeclarationKind[] mayBeAttachedList() {
+	return decKindList;
+}
+
+private static DeclarationKind[] decKindList =
+    new DeclarationKind[] { DeclarationKind.METHOD_DEC };
+\end{lstlisting}
+
+Dessa forma, durante a compilação do Código-Fonte~\ref{cod:TreplicaDadosMeta} quando o compilador de Cyan encontra a anotação \srcstyle{treplicaAction}, ele procura por um metaobjeto com nome \srcstyle{"treplicaAction"} e verifica se a anotação encontrada está atrelada a uma definição de método de Cyan. Somente depois um ou mais métodos desse metaobjeto associados à anotação são chamados pelo compilador para gerar uma nova versão do código-fonte que está sendo compilado.
+
+\begin{lstlisting}[language=Java, caption={Protótipo \textbf{Info} modificado}, label={cod:InfoChange}]
+package main
+
+import treplica
+
+object Info extends Context
+  ...
+  func setText: String text {
+    var action = InfosetText new: text;
+    self getTreplica execute: action;
+  }
+
+  func setTextTreplicaAction: String text {
+    self.text = text;
+  }
+  ...
+end
+\end{lstlisting}
+
+\subsection{Ações e o metaobjeto \textbf{treplicaAction}}
+
+Para que o metaobjeto \srcstyle{treplicaAction} funcione como explicado na Seção~\ref{sec:treplicacyanmeta} é necessário que a classe \srcstyle{CyanMetaobjectTreplicaAction} estenda do \emph{PMO} as interfaces \srcstyle{IActionProgramUnit\_ati} e \srcstyle{IAction\_dsa}. Elas participam das etapas \textbf{Ati Actions (3)} e \textbf{Calc. Internal Types (6)} respectivamente. Esta classe deve redefinir métodos das interfaces para criar novos métodos em Cyan, renomear métodos existentes e criar novos protótipos.
+
+A execução desse metaobjeto acontece em etapas e envolve um conjunto de funções das interfaces do metaobjeto. Essa execução ocorre do seguinte modo: primeiro o método \srcstyle{ati\_renameMethod} do metaobjeto \srcstyle{treplicaAction} renomeia o método \srcstyle{setText:} do protótipo \srcstyle{Info} para \srcstyle{setTextTreplicaAction:}. Para evitar que um outro método tenha o mesmo nome é adicionado ao final de \srcstyle{setTextTreplicaAction:} um complemento único gerado pelo metaobjeto. Depois, o novo método \srcstyle{setText:} é criado no mesmo protótipo do método original que foi renomeado. O Código-Fonte~\ref{cod:InfoChange} mostra tanto o método \srcstyle{setTextTreplicaAction:} quanto o novo método \srcstyle{setText:}. Por último, ele cria o novo protótipo \srcstyle{InfosetText} mostrado no Código-Fonte~\ref{cod:TreplicaMetaActionResult} para representar a chamada replicada do novo método \srcstyle{setTextTreplicaAction:}. A nova versão de \srcstyle{setText:} chama o método \srcstyle{execute:} de Treplica passando um objeto do tipo \srcstyle{InfosetText}.
+
+\begin{lstlisting}[language=Java, caption={Protótipo criado por \textbf{treplicaAction}}, label={cod:TreplicaMetaActionResult}]
+object InfosetText extends Action
+  var String textVar
+  func init:  String text {
+    textVar = text;
+  }
+
+  override
+  func executeOn: Context context {
+    var obj = Info cast: context;
+    obj setTextTreplicaAction:  textVar;
+  }
+end
+\end{lstlisting}
+
+Para implementar o comportamento descrito do metaobjeto \srcstyle{treplicaAction}, foi necessário definir três métodos da interface \srcstyle{IActionProgramUnit\_ati}. Primeiro o método \srcstyle{ati\_renameMethod}, que renomeia \srcstyle{setText:} para \srcstyle{setTextTreplicaAction:}. Em seguida, o método \srcstyle{ati\_NewPrototypeList}, que cria o protótipo de \srcstyle{InfosetText}. Finalmente, o método \srcstyle{ati\_codeToAddToPrototypes}, que cria o novo método \srcstyle{setText:}. O método \srcstyle{ati\_codeToAddToPrototypes}, como os demais métodos, gera uma nova versão do código-fonte e a retorna na forma de uma \emph{String} para o compilador de Cyan. O compilador Cyan chama os métodos do metaobjeto respectivamente na ordem em que foram mencionados.
+
+\begin{lstlisting}[language=Java, caption={Método que renomeia os métodos anotados com \textbf{treplicaAction}}, label={cod:CdActionApRename}, frame=TLBR]
+public ArrayList<Tuple3<String, String, String[]>> ati_renameMethod(ICompiler_ati compiler_ati) {
+  String prototypeName = compiler_ati.getCurrentPrototypeName();
+  MethodDec md = (MethodDec) this.getAttachedDeclaration();
+  String oldMethodName = md.getName();
+  String newMethodNameWithPar[] = new String[1 + md.getMethodSignature().getParameterList().size()];
+  String auxName = md.getNameWithoutParamNumber();
+  auxName = auxName.replaceAll(":", "");
+  newMethodNameWithPar[0] = auxName +"TreplicaAction"+ this.fixName;
+  ...
+  ArrayList<Tuple3<String, String, String[]>> tupleList = new ArrayList<>();
+  tupleList.add(new Tuple3<String, String, String[]>(prototypeName, oldMethodName, newMethodNameWithPar));
+  return tupleList;
+}
+\end{lstlisting}
+
+O método \srcstyle{ati\_renameMethod}, mostrado no Código-Fonte~\ref{cod:CdActionApRename}, pega o nome atual do método e adiciona \srcstyle{"TreplicaAction"} ao final do nome. Para evitar que um outro método tenha o mesmo nome, é adicionado ao final de \srcstyle{"TreplicaAction"} um complemento único gerado pelo método Java \srcstyle{NameServer.nextLocalVariableName()}. Se o método renomeado tiver parâmetros, eles são adicionados na mesma lista que foi adicionado o novo nome. Uma lista de tuplas formadas pelo nome antigo, o novo nome e os parâmetros é criada e retornada para o compilador. Uma nova versão do código-fonte é gerada onde o nome antigo contido em cada tupla dessa lista é substituído pelo nome novo da mesma tupla. Essa versão do metaobjeto \srcstyle{treplicaAction} não trata os métodos com mais de um seletor, remover essa limitação é uma sugestão de melhoria futura.   
+
+\begin{lstlisting}[language=Java, caption={Método que cria o protótipo da ação associada ao método anotado}, label={cod:CdActionApNewProt}, frame=TLBR, basicstyle=\linespread{0.8}\fontsize{9}{\baselineskip}\selectfont\ttfamily]
+public ArrayList<Tuple2<String, StringBuffer>> ati_NewPrototypeList(ICompiler_ati compiler_ati) {
+  MethodDec md = (MethodDec) this.getAttachedDeclaration();
+  String methodName = md.getNameWithoutParamNumber();
+  ...
+  for (ParameterDec par : md.getMethodSignature().getParameterList()) {
+    varDef += "var " + par.getType().getName() +" "+ par.getName() + "Var\n";
+    funcPar += " " + par.getType().getName() + " " + par.getName() + ",";
+    funcAssign += par.getName() + "Var = " + par.getName() + ";\n";
+    callPar += " " + par.getName() + "Var,";
+  }
+  ...
+  String objectName = compiler_ati.getCurrentPrototypeName();
+
+  ArrayList<Tuple2<String, StringBuffer>> protoCodeList = new ArrayList<>();
+  String prototypeName = NameServer.removeQuotes(objectName + methodName);
+  
+  this.fixName = NameServer.nextLocalVariableName();
+  StringBuffer code = new StringBuffer( 
+    "package main\n" + "\n" + 
+    "import treplica\n" + "\n" + 
+    "object " + prototypeName + " extends Action\n" + "\n" + 
+      varDef + "\n" + 
+      "func init" + hasFuncPar + funcPar + " {\n" + 
+        funcAssign + 
+      "}\n" + "\n" + 
+      "override\n" + 
+      "func executeOn: Context context -> Dyn {\n" + 
+        "var obj = Cast<" + objectName + "> asReceiver: context;\n" + 
+        retStatement + "obj " + methodName + "TreplicaAction" + this.fixName +
+          hasCallPar + callPar + ";\n" + 
+        retNullState + 
+      "}\n" + 
+    "end\n"
+  );
+  
+  String unescape = Lexer.unescapeJavaString(code.toString());
+  protoCodeList.add(new Tuple2<String, StringBuffer>(prototypeName, new StringBuffer(unescape)));
+  
+  return protoCodeList;
+}
+\end{lstlisting}
+
+O método \srcstyle{ati\_NewPrototypeList} é mostrado no Código-Fonte~\ref{cod:CdActionApNewProt}, ele cria o protótipo da ação que será associada ao método anotado (no exemplo, é o protótipo \srcstyle{InfosetText} do Código-Fonte~\ref{cod:TreplicaMetaActionResult}). O nome do método anotado é atribuído à variável \srcstyle{methodName}. Em seguida os parâmetros do método anotado são percorridos e seus tipos e nomes são atribuídos a um grupo de variáveis (\srcstyle{varDef}, \srcstyle{funcPar}, \srcstyle{funcAssign}, \srcstyle{callPar}), como a variável \srcstyle{callPar}, que lista os nomes dos parâmetros do método separados por vírgula. Essa lista é usada como entrada para o construtor de um protótipo na Linha 18 do Código-Fonte~\ref{cod:CdActionApNewProt}. Esse grupo de variáveis do método \srcstyle{ati\_NewPrototypeList} é usado para gerar as variáveis de instância e o construtor do novo protótipo. 
+
+As variáveis de instância criadas no novo protótipo serão usadas em seu método \srcstyle{executeOn:}. Esse método é implementado em todas as ações e é usado para chamar o método anotado que essa ação representa. O método \srcstyle{ati\_NewPrototypeList} termina construindo uma lista de tuplas na qual cada tupla contém o nome e o código-fonte do protótipo e retornando essa lista apara o compilador. Uma nova verão do código-fonte que contém o novo protótipo é gerada pelo compilador.
+
+\begin{lstlisting}[language=Java, caption={Método que adiciona o novo método do contexto}, label={cod:CdActionApNewMet}, frame=TLBR, basicstyle=\linespread{0.8}\fontsize{9}{\baselineskip}\selectfont\ttfamily]
+public ArrayList<Tuple2<String, StringBuffer>> ati_codeToAddToPrototypes(ICompiler_ati compiler) {
+  MethodDec md = (MethodDec) this.getAttachedDeclaration();
+  String methodName = md.getNameWithoutParamNumber();
+  ...
+  String objectName = compiler.getCurrentPrototypeName();
+  String prototypeName = NameServer.removeQuotes(objectName + methodName);
+
+  StringBuffer code = new StringBuffer("\n\n" + 
+    "func " + methodName + hasFunPar + funcPar + hasCallRet + 
+      funcRet + " {\n" + 
+      "var action = " + prototypeName + " new" + hasCallPar + 
+        callPar + ";\n" + 
+      "var Dyn ret = getTreplica execute: action;\n" + 
+      retStatement + 
+    "}\n"
+  );
+    
+  ArrayList<Tuple2<String, StringBuffer>> result = new ArrayList<>();
+  result.add(new Tuple2<String, StringBuffer>(objectName, code));
+  return result;
+}
+\end{lstlisting}
+
+O método \srcstyle{ati\_codeToAddToPrototypes}, que é mostrado no Código-Fonte~\ref{cod:CdActionApNewMet}, cria um novo método no protótipo do método anotado com \srcstyle{treplicaAction}. O método criado tem o mesmo nome, parâmetros e retorno do método que foi renomeado pelo método \srcstyle{ati\_renameMethod}. O comportamento atribuído a esse novo método consiste em criar uma instância do novo protótipo gerado pelo método  \srcstyle{ati\_NewPrototypeList} e passar essa instância como parâmetro de uma chamada ao método \srcstyle{execute} de Treplica.
+
+O Código-Fonte~\ref{cod:TreplicaDadosMeta} mostra a versão original do protótipo \srcstyle{Info} que tem o método \srcstyle{setText:} marcado com a anotação \srcstyle{treplicaAction}. Durante a compilação esse metaobjeto gera uma nova versão desse código-fonte, como mostrado no Código-Fonte~\ref{cod:InfoChange}, e gera o protótipo \srcstyle{InfosetText}, mostrado no Código-Fonte~\ref{cod:TreplicaMetaActionResult}. O método renomeado mudou de \srcstyle{setText:} para \srcstyle{setTextTreplicaAction:}, e um novo método criado recebe o nome de \srcstyle{setText:}.
+
+\subsection{Metaobjeto \textbf{treplicaAction} e não determinismo}
+\label{sec:trcyndmeta} 
+
+O metaobjeto \srcstyle{treplicaAction} também verifica a ocorrência de não determinismo nos métodos anotados por ele e retorna um erro de compilação caso alguma ocorrência seja encontrada. Esse comportamento é implementado no método que redefine o método \srcstyle{dsa\_codeToAdd} pertencente à interface 
+\srcstyle{IAction\_dsa}, que também é implementada pela classe do metaobjeto \srcstyle{treplicaAction}. Essa verificação é feita por meio de uma busca em profundidade que tem início no método anotado com esse metaobjeto. 
+
+Essa busca em profundidade utiliza o padrão de projeto \emph{Visitor} para percorrer os métodos chamados na implementação do método anotado de modo recursivo. Percorrer um método significa procurar por chamadas de métodos dentro do método que está sendo percorrido e percorrer esse método também, recursivamente. A busca termina quando o método que estiver sendo percorrido não chamar outros métodos ou somente chamar métodos já analisados. Chamadas do método por ele mesmo e chamadas aos métodos do pacote padrão de Cyan (\srcstyle{cyan.lang}) são ignoradas.
+
+Um método é não determinista se ele usa em sua implementação algum outro método não determinista ou se ele é explicitamente indicado como não determinista pelo desenvolvedor. No pacote treplica de Cyan ou no programa que está sendo compilado, o desenvolvedor pode adicionar regras que associam quais métodos não deterministas devem ser trocados por métodos deterministas. O metaobjeto \srcstyle{treplicaAction} irá procurar nesses dois locais por regras que associam métodos não deterministas que devem ser trocados por métodos deterministas. As regras podem ser adicionadas no pacote treplica, mas manter as regras junto ao pacote que implemente os métodos deterministas usados pelas regras é mais adequado.
+
+Essas regras são definidas no arquivo de nome \emph{deterministic} que fica na pasta \emph{-\--data} e pode ser colocada no diretório do pacote e no diretório da aplicação. O metaobjeto não realiza verificações entre as regras e os protótipos e métodos do pacote onde o arquivo foi definido, as regras podem fazer referência a protótipos de qualquer pacote de Cyan. O arquivo \emph{deterministic} não é limitado a ser definido em um único diretório, cada pacote pode definir seu arquivo de regras, e eles podem coexistir.
+
+Cada linha desse arquivo contém uma regra que define quais são os métodos explicitamente indicados como não deterministas e por qual método cada um deles deve ser trocado. O Código-Fonte~\ref{cod:RulesFileNd} mostra como uma regra deve ser representada. O \srcstyle{PacoteA}, o \srcstyle{PrototipoA} e o \srcstyle{metodoA} à esquerda são a parte não determinista que será trocada pela parte determinista, que são o \srcstyle{PacoteB}, o \srcstyle{PrototipoB} e o \srcstyle{metodoB} à direita. Os tipos de parâmetros, o retorno e as palavras-chave de ambos os métodos devem ser os mesmos para que as expressões contidas na chamada possam ser mantidas. Caso duas regras façam referência ao mesmo \srcstyle{PacoteA}, \srcstyle{PrototipoA} e \srcstyle{metodoA} será usada a primeira regra que o metaobjeto encontrar.
+
+Caso os métodos possuam parâmetros em quantidades diferentes ou de tipos diferentes, a substituição será realizada e em seguida o compilador irá indicar um erro de compilação informando que o novo método contém mais ou menos parâmetros que o esperado, ou que os tipos dos parâmetros não são compatíveis.
+
+O método \srcstyle{metodoB} não deve usar variáveis de instância, uma vez que na substituição do \srcstyle{metodoA} não é criada uma instância do \srcstyle{PrototipoB}. O \srcstyle{metodoB} é chamado direto do \srcstyle{PrototipoB}, ele pode ser comparado a métodos estáticos de linguagens de programação orientadas a objetos.
+
+\begin{lstlisting}[language=Java, caption={Modelo de regra para indicar não determinismo}, label={cod:RulesFileNd}]
+PacoteA,PrototipoA,metodoA-PacoteB,PrototipoB,metodoB
+\end{lstlisting}
+
+Um método \srcstyle{random} do protótipo \srcstyle{Math} contido no pacote \srcstyle{cyan.math} é um exemplo de método explicitamente não determinista que pode ser adicionado ao arquivo de regras pelo desenvolvedor. Caso ele queira substituir o método \srcstyle{random} pelo método \srcstyle{randomStatic} que ele desenvolveu em seu protótipo \srcstyle{MyMath}, ele adicionaria no arquivo \emph{deterministic} a regra mostrada no Código-Fonte~\ref{cod:RulesFileNd2}.
+
+\begin{lstlisting}[language=Java, caption={Exemplo de regra criada pelo desenvolvedor}, label={cod:RulesFileNd2}]
+cyan.math,Math,random-main,MyMath,randomStatic
+\end{lstlisting}
+
+Com relação a não-determinismo, \srcstyle{treplicaAction} não tem a pretensão de cobrir todos os casos possíveis. A intenção é mostrar a possibilidade de utilizar os metaobjetos para impor validações do código-fonte e para gerar novas versões desse código-fonte removendo os problemas encontrados.
+
+Casos como o de interfaces que podem ser implementadas por diferentes protótipos são um problema uma vez que não são verificadas todas as implementações dessas interfaces. Os métodos não deterministas que modificam variáveis de instância também são um problema, pois se substituídos por métodos deterministas que não modificam as variáveis do mesmo modo, podem causar falhas ao programa. Outro caso não tratado é o dos métodos não deterministas sobrecarregados com métodos deterministas que continuam sendo considerados não deterministas. Entre outras possíveis situações problemáticas envolvidas na substituição de uma chamada por outra.
+
+\subsection{Inicialização de Treplica e o metaobjeto \textbf{treplicaInit}}
+\label{sec:trcyndmetainitsec} 
+
+O metaobjeto \srcstyle{treplicaInit}, diferentemente de \srcstyle{treplicaAction}, implementa a interface \srcstyle{IActionVariableDeclaration\_dsa} do \emph{PMO} usada na etapa \textbf{Calc. Internal Types (6)} da compilação. O metaobjeto implementa o método \srcstyle{dsa\_codeToAddAfter} dessa interface para gerar uma nova versão do código-fonte da declaração de variável à qual estiver atrelado. Esse metaobjeto substitui a declaração das Linhas 9 e 10 mostrada no Código-Fonte~\ref{cod:TreplicaMainMeta} pelo trecho entre as Linhas 5 e 9 do Código-Fonte~\ref{cod:InitChange}. Esse novo código-fonte, além de declarar a variável \srcstyle{info}, também declara a variável \srcstyle{treplicainfo}. Em seguida ele atribui o objeto \srcstyle{info} a uma variável do objeto \srcstyle{treplicainfo} por meio do método \srcstyle{runMachine}. Finalmente, o objeto \srcstyle{treplicainfo} é atribuído a uma variável do objeto \srcstyle{info} pelo método \srcstyle{setTreplica}.
+
+\begin{lstlisting}[language=Java, caption={Protótipo \textbf{Program} modificado}, label={cod:InitChange}]
+object Program 
+  func run: Array<String> args {
+    var local = "/var/tmp/magic" ++ args[1];
+    
+    var info = Info new;
+    var treplicainfo = Treplica new;
+    treplicainfo runMachine: info numberProcess: 3
+                 rtt: 200 path: local;
+    info setTreplica: treplicainfo;
+    
+    info setText: "text";
+  }
+end
+\end{lstlisting}
+
+O método \srcstyle{dsa\_codeToAddAfter} mostrado no Código-Fonte~\ref{cod:CdActionApInitTrep} é o responsável pelo comportamento do metaobjeto \srcstyle{treplicaInit}. Ele gera o código-fonte necessário à inicialização da máquina de estados de Treplica e passa a variável anotada como o contexto inicial dessa máquina de estados. O código-fonte gerado por esse método é retornado ao compilador que produz uma nova versão do programa com esse código-fonte. 
+
+\begin{lstlisting}[language=Java, caption={Método principal do metaobjeto \textbf{treplicaInit}}, label={cod:CdActionApInitTrep}, frame=TLBR]
+public StringBuffer dsa_codeToAddAfter() {
+  ...
+  StatementLocalVariableDecList varList = 
+    (StatementLocalVariableDecList) dec;
+  ArrayList<Object> parameterList = withAt.getJavaParameterList();
+  ...
+	
+  String nameTreplicaVar = "treplica" 
+    + varList.getLocalVariableDecList().get(0).getName();
+  StringBuffer code = new StringBuffer("var " 
+    + nameTreplicaVar + " = Treplica new;\n");
+  code.append(nameTreplicaVar + " runMachine: ");
+  code.append(varList.getLocalVariableDecList().get(0).getName());
+  code.append(" numberProcess: ");
+  code.append(strList[0]); 
+  code.append(" rtt: ");
+  code.append(strList[1]); 
+  code.append(" path: ");
+  code.append(strList[2]); 
+  code.append(";\n");
+  code.append(varList.getLocalVariableDecList().get(0).getName() 
+    + " setTreplica: " + nameTreplicaVar + ";\n");
+	
+  return code;
+}
+\end{lstlisting}
+
+\section{Comportamento Genérico de \textbf{treplicaAction} e \textbf{treplicaInit}}
+
+Os metaobjetos \textbf{treplicaAction} e \textbf{treplicaInit} são mostrados nessa seção de forma genérica. Assim, pode-se mostrar quais trechos do código-fonte original são usados para gerar a nova versão desse código-fonte. Essas versões de código-fonte são analisadas do ponto de vista sintático, os trechos de código-fonte usados na nova versão que são obtidos da versão anterior estão representados pela sintaxe $\langle nome\ do\ trecho\ de\ c\acute{o}digo\mbox{-}fonte \rangle$ em ambas as versões desse código-fonte.
+
+Como exemplo dessa notação, no Código-Fonte~\ref{cod:exemplousoorig} é mostrado trecho de código que será utilizado por um metaobjeto fictício (\srcstyle{metaobj}) para gerar uma nova verão de código-fonte. Os trechos utilizados estão entre $\langle$ e $\rangle$, esses trechos são omitidos e recebem um nome que os identifica. Todos os códigos-fonte dessa seção estão escritos na linguagem Cyan. Trechos concatenados são indicados por $\langle \langle trecho\ 1 \rangle\langle trecho\ 2 \rangle \rangle$, mostrando que o trecho $\langle trecho\ 1 \rangle$ está concatenado ao $\langle trecho\ 2 \rangle$.
+
+\begin{lstlisting}[language=Java, caption={Exemplo de código-fonte original}, label={cod:exemplousoorig}, mathescape=true]
+@metaobj
+func $\langle nome\ do\ m\acute{e}todo\ exemplo \rangle$:  $\langle par\hat{a}metros\ exemplo \rangle$ {
+  ...
+}
+\end{lstlisting}
+
+O \srcstyle{metaobj} foi implementado para que durante a compilação, ele crie dois novos método com os mesmos parâmetros e mesmo retorno do método anotado, mas com seus nomes seguidos das letras \srcstyle{ABC} e \srcstyle{DFG}. Durante a compilação esse metaobjeto gera uma nova versão do Código-Fonte~\ref{cod:exemplousoorig}, que é mostrada no Código-Fonte~\ref{cod:exemplousover}. Os trechos de código $\langle nome\ do\ m\acute{e}todo\ exemplo \rangle$ e $\langle par\hat{a}metros\ exemplo \rangle$ são usados na nova versão desse código-fonte.
+
+\begin{lstlisting}[language=Java, caption={Exemplo do código-fonte gerado por \textbf{metaobj}}, label={cod:exemplousover}, mathescape=true]
+func $\langle nome\ do\ m\acute{e}todo\ exemplo \rangle$:  $\langle par\hat{a}metros\ exemplo \rangle$ {
+  ...
+}
+
+func $\langle nome\ do\ m\acute{e}todo\ exemplo \rangle$ABC:  $\langle par\hat{a}metros\ exemplo \rangle$ {
+  ...
+}
+
+func $\langle nome\ do\ m\acute{e}todo\ exemplo \rangle$DFG:  $\langle par\hat{a}metros\ exemplo \rangle$ {
+  ...
+}
+\end{lstlisting}
+
+\subsection{Sintaxe Genérica de \textbf{treplicaAction}}
+
+O metaobjeto \textbf{treplicaAction} é usado para anotar métodos de Cyan que pertencem a protótipos que estendem \srcstyle{Context}:. Esses métodos são anotados para que representem uma \srcstyle{Action} de Treplica. O Código-Fonte~\ref{cod:originalactioncf} mostra um método anotado com \textbf{treplicaAction}, durante a compilação esse método será renomeado, e uma nova versão desse método será criada. Um protótipo que representa esse método como uma \srcstyle{Action} de Treplica também será gerado. O método anotado deve ter uma única palavra-chave (seletor), pois \textbf{treplicaAction} não está preparado para tratar métodos com mais palavras-chave.
+
+\begin{lstlisting}[language=Java, caption={Versão original do código-fonte que usa \textbf{treplicaAction}}, label={cod:originalactioncf}, mathescape=true]
+object $\langle nome\ do\ prot\acute{o}tipo \rangle$ extends Context
+  ...
+  @treplicaAction
+  func $\langle nome\ do\ m\acute{e}todo \rangle$:  $\langle tipo\ do\ par\hat{a}metro\ 1 \rangle$ $\langle nome\ do\ par\hat{a}metro\ 1 \rangle$, 
+      $\langle tipo\ do\ par\hat{a}metro\ 2 \rangle$ $\langle nome\ do\ par\hat{a}metro\ 2 \rangle$, 
+      $\langle tipo\ do\ par\hat{a}metro\ n \rangle$ $\langle nome\ do\ par\hat{a}metro\ n \rangle$ {
+    ...
+  }
+end
+\end{lstlisting}
+
+O Código-Fonte~\ref{cod:verprotaction} mostra o protótipo gerado por \textbf{treplicaAction}. O nome desse novo protótipo é gerado com base no nome do contexto do método anotado concatenado com o nome do próprio método. As variáveis de instância desse protótipo são definidas com base nos parâmetros do método anotado concatenadas com \srcstyle{Var}, qualquer número de parâmetros é aceito. O método \srcstyle{init} tem como parâmetro os mesmos parâmetros do método anotado, esse método atribui às variáveis de instância seus parâmetros. O método \srcstyle{executeOn} recebe a instância de \srcstyle{Context} e chama o método $\langle nome\ do\ m\acute{e}todo \rangle$\srcstyle{TreplicaAction}$\langle id\ \acute{u}nico \rangle$, passando as variáveis de instância como parâmetros. Esse método é o método anotado que foi renomeado.
+
+\begin{lstlisting}[language=Java, caption={Protótipo gerado por \textbf{treplicaAction}}, label={cod:verprotaction}, mathescape=true] 
+object $\langle\langle nome\ do\ prot\acute{o}tipo \rangle$$\langle nome\ do\ m\acute{e}todo \rangle\rangle$ extends Action
+  var $\langle tipo\ do\ par\hat{a}metro\ 1 \rangle$ $\langle nome\ do\ par\hat{a}metro\ 1 \rangle$Var
+  var $\langle tipo\ do\ par\hat{a}metro\ 2 \rangle$ $\langle nome\ do\ par\hat{a}metro\ 2 \rangle$Var
+  var $\langle tipo\ do\ par\hat{a}metro\ n \rangle$ $\langle nome\ do\ par\hat{a}metro\ n \rangle$Var
+  
+  func init: $\langle tipo\ do\ par\hat{a}metro\ 1 \rangle$ $\langle nome\ do\ par\hat{a}metro\ 1 \rangle$, 
+      $\langle tipo\ do\ par\hat{a}metro\ 2 \rangle$ $\langle nome\ do\ par\hat{a}metro\ 2 \rangle$, 
+      $\langle tipo\ do\ par\hat{a}metro\ n \rangle$ $\langle nome\ do\ par\hat{a}metro\ n \rangle$ {
+    $\langle nome\ do\ par\hat{a}metro\ 1 \rangle$Var = $\langle nome\ do\ par\hat{a}metro\ 1 \rangle$;
+    $\langle nome\ do\ par\hat{a}metro\ 2 \rangle$Var = $\langle nome\ do\ par\hat{a}metro\ 2 \rangle$;
+    $\langle nome\ do\ par\hat{a}metro\ n \rangle$Var = $\langle nome\ do\ par\hat{a}metro\ n \rangle$;
+  }
+
+  override
+  func executeOn: Context context {
+    var obj = $\langle nome\ do\ prot\acute{o}tipo \rangle$ cast: context;
+    obj $\langle nome\ do\ m\acute{e}todo \rangle$TreplicaAction$\langle id\ \acute{u}nico \rangle$: $\langle nome\ do\ par\hat{a}metro\ 1 \rangle$Var, $\langle nome\ do\ par\hat{a}metro\ 2 \rangle$Var, $\langle nome\ do\ par\hat{a}metro\ n \rangle$Var;
+  }
+end
+\end{lstlisting}
+
+A nova versão do protótipo que estende \srcstyle{Context} é mostrada no Código-Fonte~\ref{cod:vercontextaction}. O método $\langle nome\ do\ m\acute{e}todo \rangle$ é renomeado para $\langle nome\ do\ m\acute{e}todo \rangle$\srcstyle{TreplicaAction} $\langle id\ \acute{u}nico \rangle$, o compilador também adiciona ao final do novo nome um complemento ( $\langle id\ \acute{u}nico \rangle$ ) para tornar esse nome único dentro do protótipo. Um novo método $\langle nome\ do\ m\acute{e}todo \rangle$ é criado, ele tem os mesmo parâmetros do método original. Esse novo método ( $\langle nome\ do\ m\acute{e}todo \rangle$ ) instancia o novo protótipo que foi gerado e chama o método \srcstyle{execute} de treplica passando essa instância que representa uma \srcstyle{Action} de Treplica.
+
+Tomando o Código-Fonte~\ref{cod:TreplicaDadosMeta} como exemplo concreto dessa abstração de sintaxe, os trechos de código-fonte usados pelo metaobjeto \textbf{treplicaAction} seriam: $\langle nome\ do\ $ $prot\acute{o}tipo \rangle$ representando \srcstyle{Info}, $\langle nome\ do\ m\acute{e}todo \rangle$ representando \srcstyle{setText}, $\langle tipo\ do\ $ $par\hat{a}metro\ 1 \rangle$ representando \srcstyle{String} e $\langle nome\ do\ par\hat{a}metro\ 1 \rangle$ representando \srcstyle{text}. Aplicando esses trechos de código-fonte sobre o Código-Fonte~\ref{cod:verprotaction}, é gerado um protótipo igual ao do Código-Fonte~\ref{cod:TreplicaMetaActionResult}, e aplicados ao Código-Fonte~\ref{cod:vercontextaction}, é gerado uma versão nova do contexto com o método anotado igual a do Código-Fonte~\ref{cod:InfoChange}.
+
+\begin{lstlisting}[language=Java, caption={Nova versão do protótipo que contém o método anotado}, label={cod:vercontextaction}, mathescape=true]
+object $\langle nome\ do\ prot\acute{o}tipo \rangle$ extends Context
+  ...
+  func $\langle nome\ do\ m\acute{e}todo \rangle$:  $\langle tipo\ do\ par\hat{a}metro\ 1 \rangle$ $\langle nome\ do\ par\hat{a}metro\ 1 \rangle$, 
+        $\langle tipo\ do\ par\hat{a}metro\ 2 \rangle$ $\langle nome\ do\ par\hat{a}metro\ 2 \rangle$, 
+        $\langle tipo\ do\ par\hat{a}metro\ n \rangle$ $\langle nome\ do\ par\hat{a}metro\ n \rangle$ {
+    var action = $\langle\langle nome\ do\ prot\acute{o}tipo \rangle$$\langle nome\ do\ m\acute{e}todo \rangle\rangle$ new: 
+      $\langle nome\ do\ par\hat{a}metro\ 1 \rangle$, $\langle nome\ do\ par\hat{a}metro\ 2 \rangle$, $\langle nome\ do\ par\hat{a}metro\ n \rangle$;
+    self getTreplica execute: action;
+  }
+  
+  func $\langle nome\ do\ m\acute{e}todo \rangle$TreplicaAction$\langle id\ \acute{u}nico \rangle$: 
+      $\langle tipo\ do\ par\hat{a}metro\ 1 \rangle$ $\langle nome\ do\ par\hat{a}metro\ 1 \rangle$, 
+      $\langle tipo\ do\ par\hat{a}metro\ 2 \rangle$ $\langle nome\ do\ par\hat{a}metro\ 2 \rangle$, 
+      $\langle tipo\ do\ par\hat{a}metro\ n \rangle$ $\langle nome\ do\ par\hat{a}metro\ n \rangle$ {
+    ...
+  }
+end
+\end{lstlisting}
+
+\subsection{Sintaxe Genérica de \textbf{treplicaInit}}
+
+O metaobjeto \textbf{treplicaInit} é usado para anotar declarações de variáveis que recebem instâncias de protótipos que estendem \srcstyle{Context}. No Código-Fonte~\ref{cod:originalinitcf} esse metaobjeto anota a declaração da variável $\langle nome\ da\ vari\acute{a}vel \rangle$ que recebe uma instância do tipo $\langle tipo\ do\ contexto \rangle$. Essa anotação também recebe os parâmetros $\langle processos \rangle$,  $\langle rtt \rangle$ e $\langle local \rangle$ usados para inicializar a máquina da estados de Treplica.
+
+\begin{lstlisting}[language=Java, caption={Versão original do código-fonte que usa \textbf{treplicaInit}}, label={cod:originalinitcf}, mathescape=true]
+@treplicaInit( $\langle processos \rangle$,  $\langle rtt \rangle$,  $\langle local \rangle$ )
+var $\langle nome\ da\ vari\acute{a}vel \rangle$ = $\langle tipo\ do\ contexto \rangle$ new;
+\end{lstlisting}
+
+O Código-Fonte~\ref{cod:verinitcf} mostra a nova versão dessa declaração gerada por \textbf{treplicaInit}. Uma nova variável é criada para receber a instância do protótipo \srcstyle{Treplica}. Essa instância é inicializada chamando o método \srcstyle{runMachine:}, que recebe os parâmetros associados à anotação. Por último, a variável com a instância do contexto chama o método \textbf{setTreplica:} para receber a instância de Treplica associada à variável \srcstyle{treplica}$\langle nome\ da\ vari\acute{a}vel \rangle$.
+
+\begin{lstlisting}[language=Java, caption={Nova versão do código-fonte de inicialização de Treplica}, label={cod:verinitcf}, mathescape=true]
+var $\langle nome\ da\ vari\acute{a}vel \rangle$ = $\langle tipo\ do\ contexto \rangle$ new;
+var treplica$\langle nome\ da\ vari\acute{a}vel \rangle$ = Treplica new;
+treplica$\langle nome\ da\ vari\acute{a}vel \rangle$ runMachine: $\langle nome\ da\ vari\acute{a}vel \rangle$ 
+      numberProcess: $\langle processos \rangle$ rtt: $\langle rtt \rangle$ path: $\langle local \rangle$;
+$\langle nome\ da\ vari\acute{a}vel \rangle$ setTreplica: treplica$\langle nome\ da\ vari\acute{a}vel \rangle$;
+\end{lstlisting}
+
+Tomando o Código-Fonte~\ref{cod:TreplicaMainMeta} como exemplo concreto dessa abstração de sintaxe, os trechos de código-fonte usados pelo metaobjeto \textbf{treplicaInit} seriam: $\langle processos \rangle$ representando \srcstyle{3}, $\langle rtt \rangle$ representando \srcstyle{200}, $\langle local \rangle$ representando \srcstyle{local}, $\langle nome\ da\ vari\acute{a}vel \rangle$ representando \srcstyle{info} e $\langle tipo\ do\ contexto \rangle$ representando \srcstyle{Info}. Aplicando esses trechos de código-fonte sobre o Código-Fonte~\ref{cod:verinitcf} é gerada uma versão dessa declaração anotada igual ao Código-Fonte~\ref{cod:InitChange}.

@@ -1,0 +1,64 @@
+package cyan.io
+
+    
+@javacode{* import java.io.*; *}
+
+
+@doc{*
+
+   All prototypes of package cyan.io have not been tested. Use them
+   at your own risk.
+
+*}
+object InByteFile
+
+    func init: String filename {
+        self.filename = filename;
+        @javacode{*
+        try { 
+            file = new java.io.FileInputStream(_filename.s);
+        }
+        catch ( FileNotFoundException e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionFileNotFound( _filename ) );            
+        }
+        *}
+        
+    }
+    
+    func read -> Int {
+        @javacode{*
+        
+            try { 
+                return new CyInt(file.read());
+            }
+            catch ( IOException e ) {
+                throw new ExceptionContainer__( 
+                    new _ExceptionIO( _filename ) );            
+            }        
+        *}
+    }
+
+    
+    func close {
+        @javacode{*
+        try { 
+            file.close();
+        }
+        catch ( IOException e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( _filename ) );            
+        }        
+        *}
+        return Nil
+    }
+    
+    String filename
+    
+    @javacode{*
+    FileInputStream file;        
+    *}
+
+
+end
+

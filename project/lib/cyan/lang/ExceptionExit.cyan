@@ -1,0 +1,7 @@
+package cyan.lang
+
+object ExceptionExit extends CyException
+    func eval: ExceptionExit e {
+        System exit
+    }
+end

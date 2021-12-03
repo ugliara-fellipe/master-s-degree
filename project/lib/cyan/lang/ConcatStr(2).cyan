@@ -1,0 +1,11 @@
+package cyan.lang
+
+object ConcatStr<T, FieldName>(String &sum) extends FunctionFieldPipeNil<T, Nil>
+     
+     override
+     func eval: T elem {
+          sum = sum ++ (elem FieldName)
+     }
+     
+end
+

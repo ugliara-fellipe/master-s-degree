@@ -1,0 +1,63 @@
+package main
+
+object Const
+
+  func ENTITY -> Int = 0;
+
+  func OBSTACLE -> Int {
+    return 1;
+  }
+
+  func FLOOR -> Int {
+    return 2;
+  }
+
+  func MAGE -> Int {
+    return 3;
+  }
+
+  func WARRIOR -> Int {
+    return 4;
+  }
+
+  func WIN -> Int {
+    return 5;
+  }
+
+  func LOSE -> Int {
+    return 6;
+  }
+
+  func GAME -> Int {
+    return 7;
+  }
+
+  func TURN -> Int {
+    return 3;
+  }
+  
+  func MAP_WIDTH -> Int {
+    return 80;
+  }
+  
+  func MAP_HEIGHT -> Int {
+    return 40;
+  }
+  
+  func INFO_WIDTH -> Int {
+    return 32;
+  }
+  
+  func INFO_HEIGHT -> Int {
+    return 40;
+  }
+  
+  func ROW_SIZE -> Int {
+    return (Const MAP_HEIGHT) - 5;
+  }
+  
+  func COLUMN_SIZE -> Int {
+    return (Const MAP_WIDTH) - 2;
+  }
+  
+end

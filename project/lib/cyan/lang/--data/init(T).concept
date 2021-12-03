@@ -1,0 +1,4 @@
+// based on http://en.cppreference.com/w/cpp/concept
+T has [ 
+    func init
+], "T should have a constructor 'init' without parameters"

@@ -1,0 +1,25 @@
+package main
+
+object MapTuple
+  
+  var Tile tile;
+  var Figure|Nil figure;
+  
+  func init: Tile tile, Figure|Nil figure {
+    self.tile = tile;
+    self.figure = figure;
+  }
+  
+  func setFigure: Figure|Nil figure {
+    self.figure = figure;
+  }
+  
+  func getFigure -> Figure|Nil {
+    return self.figure;
+  }
+  
+  func getTile -> Tile {
+    return self.tile;
+  }
+
+end

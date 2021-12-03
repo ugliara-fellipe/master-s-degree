@@ -1,0 +1,63 @@
+package main
+
+object InfoCanvas
+
+  shared var String buffer
+  
+  private func initOnce {
+    self.buffer = "";
+  }
+  
+  func title {
+    write: (Native stringRepeat: "=", (Const INFO_WIDTH) - 2) ++ "+\n";
+    let Int spaceSize = ((Const INFO_WIDTH) - 2 - (("Info") size)) / 2;
+    let String space = (Native stringRepeat: " ", spaceSize);
+    write: space ++ "Info" ++ space ++ "|\n";
+    write: (Native stringRepeat: "=", (Const INFO_WIDTH) - 2) ++ "+\n";
+  }
+  
+  func footer {
+    write: (Native stringRepeat: "=", (Const INFO_WIDTH) - 2) ++ "+";
+  }
+  
+  func clean {
+    self.buffer = "";
+    Window cleanTextInfo;
+  }
+  
+  func flush {
+    Window setTextInfo: self.buffer;
+    self.buffer = "";
+  }
+  
+  func write: String text {
+    self.buffer = self.buffer ++ text;
+  }
+  
+  func textLine: String text {
+    write: text;
+    write: (Native stringRepeat: " ", (Const INFO_WIDTH) - 2 - (text size));
+    write: "|\n";
+  }
+  
+  func divLine {
+    write: (Native stringRepeat: "-", (Const INFO_WIDTH) - 2);
+    write: "|\n";
+  }
+  
+  func figureLife: String name, Figure figure {
+    write: name ++ "[";
+    var Int freeArea = (Const INFO_WIDTH) - 2 - (name size) - 4;
+    var Int lifePart = (freeArea * (figure getLife) / (figure getLifeMax));
+    var Int lifeEmpty = freeArea - lifePart;
+    
+    if lifePart > 0 {
+      write: (Native stringRepeat: "*", lifePart);
+    }
+    if lifeEmpty > 0 {
+      write: (Native stringRepeat: " ", lifeEmpty);
+    }
+    write: "]  |\n";
+  }
+  
+end

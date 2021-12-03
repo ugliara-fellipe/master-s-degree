@@ -1,0 +1,10 @@
+package cyan.io
+
+interface IJsonNumber extends IJsonValue
+
+    func asInt -> Int
+    func asLong -> Long
+    func asDouble -> Double
+    func asFloat -> Float
+
+end

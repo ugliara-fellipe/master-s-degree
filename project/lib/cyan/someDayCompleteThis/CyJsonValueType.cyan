@@ -1,0 +1,15 @@
+package cyan.io
+
+
+interface IJsonValueType
+
+    // Cyan does not have enum types yet
+    func ARRAY -> Int = 0;
+    func FALSE -> Int = 1;
+    func NULL -> Int = 2;
+    func NUMBER -> Int = 3;
+    func OBJECT -> Int = 4;
+    func STRING -> Int = 5;
+    func TRUE -> Int = 6;
+
+end

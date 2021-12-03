@@ -1,0 +1,5 @@
+package cyan.lang
+
+interface ContextFunction<S, T1, T2, R>
+    fun bindToFunction: S -> UFunction<T1, T2, R> 
+end

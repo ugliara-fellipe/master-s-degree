@@ -1,0 +1,100 @@
+package cyan.lang
+
+
+       // T should be one of these types. Otherwise a compiler error is issued
+@concept{*
+    T in [ Byte, Short, Int, Char ]
+*}
+object CompositeInterval<T> implements Iterable<T>
+
+
+    func init: (T start, T theend) {
+        intervalList = Array<Interval<T>> new;
+        intervalList[0] = Interval<T> new: start, theend;
+        _size = 1 + (Int cast: (theend - start));
+    }
+    
+    func add: Interval<T> other {
+        intervalList add: other;
+        _size = size + (other size);
+    }
+    
+    func == (Any other) -> Boolean { 
+        if  other isA: CompositeInterval<T> {
+            var CompositeInterval<T> compositeInterval = CompositeInterval<T> cast: other;
+            if compositeInterval size != intervalList size {
+                return false
+            };
+            var Int i = 0;
+            for inter in intervalList  {
+                if inter != compositeInterval[i] {
+                    return false
+                };
+                ++i
+            }
+        }
+        else {
+            return false
+        }
+    }
+    
+    
+    func repeat: Block b {
+        intervalList foreach: {
+                (: Interval<T> inter :)
+                inter repeat: b
+        }
+    }
+
+    func foreach: Block<T><Void> b {
+
+        intervalList foreach: {
+                (: Interval<T> inter :)
+                inter foreach: b
+        }
+    }
+
+       // Smalltalk-like injection
+    func inject: (T initialValue)
+        into: (Block<T, T><T> b) -> T {
+        
+        var T total = intervalList[0] inject: initialValue into: b;
+        var Int size2 = intervalList size;
+        var Int j = 1;
+        while j < size2 {
+            total = intervalList[j] inject: total into: b;
+            ++j;
+        };
+        return total
+    }
+
+
+    func size -> Int { ^ _size }
+
+
+    /*  Examples: 
+          1..10 apply: #print;
+          1..10 apply: #add:
+        this last applies add: to all elements, like inject
+    */
+    func apply: (String message) -> Any {
+        intervalList foreach: {
+                (: Interval<T> inter :)
+                inter apply: message
+        }    
+    }
+
+    func .* (String message) {
+        self apply: message
+    }
+    
+    func .+ (String message) -> Any {
+        return self apply: message
+    }
+
+
+    Array<Interval<T>> intervalList;
+    Int _size
+
+end
+

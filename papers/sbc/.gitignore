@@ -1,0 +1,12 @@
+*~
+*.dvi
+*.ps
+*.aux
+*.log
+*.toc
+*.bbl
+*.blg
+*.out
+*.spl
+*.synctex*
+comment.cut

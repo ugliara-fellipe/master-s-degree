@@ -1,0 +1,12 @@
+axiom equalityTest: T a, T b, T c {%
+    if a == a && a != a && ! (a == a) || !(b == b) || !(c == c) || (a == b && a != b) ||
+       !(a == b && b == c && a != c) {
+        ^"method '==' or '!=' of T do not satisfy the axioms for equality and non-equality";
+    }
+    if ( a == b && (a != b) ) || (a != a) || (b != b) || (a == b && b != a) ||
+        (b != a && b == a) {
+        ^" T do not obey the rules for equality"
+    }
+    ^Nil
+%}
+

@@ -1,0 +1,18 @@
+package main
+
+import treplica
+
+object Update extends Action
+  
+  var String isEven
+  
+  func init: String even {
+    isEven = even
+  }
+  
+  override
+  func executeOn: (Context context) {    
+    var number = Cast<Number> asReceiver: context;
+    number update: isEven;
+  }
+end

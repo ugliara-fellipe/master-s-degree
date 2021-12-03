@@ -1,0 +1,7 @@
+package cyan.lang
+
+@changeAssignmentToUnion
+final object Union<T+> 
+     @createUnion
+    
+end

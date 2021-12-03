@@ -1,0 +1,27 @@
+T has [ 
+    func +  T -> T
+        "T should support the '+ T -> T operator",
+    func - T -> T
+    func *  T -> T
+    func / T -> T
+], "T should support the arithmetic operators '+', '-', '*', and '/'",
+
+axiom arithmeticTest: T a, T b, T c  {%
+       // there should be a lot of missing tests considering
+       // Int as the standard
+    if a + b != b + a ||
+       a + c != c + a ||
+       (a + b) + c != a + (b + c) ||
+       a*(b + c) != a*b + a*c ||
+       (a + b)*c != a*c + b*c ||
+       a - (b + c) != a - b - c ||
+       a*(b - c) != a*b - a*c ||
+       (a + b)/c != a/c + b/c ||
+       (a + b - a) != b ||
+       (a - a + b) != b {
+       ^"T does not obey the axioms for arithmetical operators"
+    }
+    ^Nil
+%}
+
+

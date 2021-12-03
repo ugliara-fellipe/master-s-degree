@@ -1,0 +1,10 @@
+package cyan.math
+
+object Sqrt extends Function<Double, Double>
+
+    override
+    func eval: Double x -> Double {
+        return x*x
+    }
+
+end

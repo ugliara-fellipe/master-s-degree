@@ -1,0 +1,603 @@
+\chapter{Metaprogramação em Compilação}
+\label{cap:metaprog}
+
+O objetivo desse capítulo e introduzir o conceito de metaprogramação. Ele inicia definindo uma linguagem de programação com elementos de metaprogramação em compilação. Essa linguagem é usada para mostrar como esse conceito funciona isoladamente de uma linguagem de programação real, que possui maior complexidade.
+
+O capítulo segue detalhando a metaprogramação em compilação e mostrando a linguagem de programação Cyan, que é a linguagem principal dessa pesquisa. As etapas de compilação em Cyan são tratados junto com seus metaobjetos. A linguagem Xtend aparece no final do capítulo para mostrar um modelo de metaprogramação em compilação diferente do mostrado em Cyan.
+
+\section{Execução e Compilação de Programas}
+
+As linguagem de programação são um método padronizado para passar instruções a um computador~\cite{dershem1995programming}. Elas são regras sintáticas e semânticas usadas para definir programas de computador~\cite{fischer1993anatomy}. A semântica e a sintaxe são relacionadas à linguagem de programação por perspectivas diferentes. A semântica é relacionada ao significado da linguagem enquanto a sintaxe é associada a estruturas ou padrões formais de como a linguagem expressa esse significado~\cite{chomsky1955logical}.
+
+Pela perspectiva da sintaxe uma linguagem é formada por tokens e regras. Os tokens são as palavras e os símbolos que pertencem à linguagem e as regras são a definição de como esses tokens podem ser agrupados de modo válido. Os possíveis agrupamento de tokens de uma linguagem de programação são chamados de sentenças. Dentre todas as sentenças que podem ser construídas com um conjunto de tokens, as que pertencem à linguagem são as que atendem a suas regras de agrupamento.
+
+O conjunto de tokens da linguagem pode ser representado por expressões regulares, elas podem ser usadas para definir os tokens na maioria das linguagens de programação. As regras da sintaxe podem ser representadas usando o formalismo de Backus-Naur, que permite definir como os tokens podem ser agrupados para formar as sentenças válidas da linguagem de programação~\cite{aho1977principles}.
+
+Diferente da sintaxe, que está vinculada à forma como as sentenças são montadas, a semântica é associada ao significado das sentenças. Uma sentença pode ser sintaticamente adequada e apresentar erros de semântica. Na frase --- \textit{devido à greve dos motoristas de ônibus fiquei parado no tráfico ontem} --- a sintaxe está correta, mas seu significado lógico é inválido. O correto seria usar a palavra \textit{tráfego} para se referir à circulação de veículos, e não a palavra \textit{tráfico}, que se refere à venda ilícita de mercadorias. 
+
+As linguagens de programação podem conter erros de significado. Uma variável do tipo inteiro que recebe a atribuição de um texto é considerado um erro de semântica em algumas linguagens, mesmo a sintaxe da atribuição estando correta. A variável definida como inteira passa a ter uma restrição implícita de que somente as atribuições de variáveis do tipo inteiro são válidas.
+
+Na Figura~\ref{fig:calculadora} é descrita uma linguagem que pode ser usada para representar operações matemáticas de multiplicação e de divisão entre números naturais. Operações matemáticas são instruções corriqueiras à maioria das linguagens de programação. Um exemplo é a soma de dois números naturais que pode ser representada de diversas formas em diferentes linguagens de programação --- soma(2, 3), (2 + 3), (+ 2 3), (2 3 +) ou (2 soma 3). A notação de Backus-Naur é usada na descrição das regras dessa linguagem e os tokens são descritos usando palavras e expressões regulares.
+
+As regras da linguagem são representadas pela construção $\langle$nome da regra$\rangle$ seguidas do símbolo ::= e de sua expansão. As demais palavras são tokens, com exceção à regra  $\langle$numero$\rangle$ que se expande para um token representado por uma expressão regular. Essa expressão regular aceita qualquer número inteiro que não inicie com zero como uma sequência de caracteres válida para formar esse token. 
+
+O símbolo | separa as opções de expansão de uma regra, $\langle$operação$\rangle$ pode ser expandida tanto para o token \textbf{multiplica} como para o token \textbf{divide}. Uma dessas opções deve ser escolhida durante a expansão dessa regra, ela não pode se expandir simultaneamente para as duas opções na geração de uma mesma sentença.
+
+\begin{figure}[H]
+\begin{framed}
+\begin{center}
+\begin{align*}
+\langle \text{inicio} \rangle &::= \langle \text{inverte} \rangle \, \mathbf{mostra} \, | \, \langle \text{valida} \rangle\\	
+\langle \text{valida} \rangle &::= \mathbf{verifica} \, \langle \text{inverte} \rangle \, \mathbf{mostra}\\
+\langle \text{inverte} \rangle &::= \mathbf{troca} \, \langle \text{conta} \rangle \, | \, \langle \text{conta} \rangle\\
+\langle \text{conta} \rangle &::= \langle \text{numero} \rangle \, \langle \text{operação} \rangle \, \langle \text{subconta} \rangle\\
+\langle \text{subconta} \rangle &::= ( \, \langle \text{conta} \rangle \, ) \, | \, \langle \text{numero} \rangle\\
+\langle \text{operação} \rangle &::= \mathbf{multiplica} \, | \, \mathbf{divide}\\
+\langle \text{numero} \rangle &::= \text{[ 1 - 9 ]?[ 0 - 9 ]+}
+\end{align*}
+\end{center}
+\end{framed} 
+\caption{Linguagem para multiplicar ou dividir e mostrar o resultado}
+\label{fig:calculadora}
+\end{figure}
+
+Todas as sentenças criadas a partir dessa linguagem têm início na regra $\langle$inicio$\rangle$ e são formadas por expansões de suas regras. Vamos verificar se a sentença --- \textbf{3 divide 9 mostra} --- pode ser formada a partir das regras dessa linguagem. Começando essa expansão pela regra $\langle$inicio$\rangle$ expandimos para a opção --- $\langle$inverte$\rangle$ \textbf{mostra}. Essa segunda composição tem a regra $\langle$inverte$\rangle$, que é expandida para formar --- $\langle$conta$\rangle$ \textbf{mostra}. Na sequência a regra $\langle$conta$\rangle$ é expandida para formar --- $\langle$numero$\rangle$ $\langle$operação$\rangle$ $\langle$subconta$\rangle$ \textbf{mostra}. Esse procedimento termina quando uma expansão que só possua tokens for produzida. Se uma expansão igual a sentença --- \textbf{3 divide 9 mostra} --- puder ser produzida, significa que tal sentença pertence (é válida) a essa linguagem. Sentenças que não podem ser produzidas a partir da expansão dessas regras não pertencem (não são válidas) a essa linguagem.
+
+A execução das sentenças dessa linguagem de programação pode ser realizada pelo computador \emph{Alpha1} e o resultado dessa execução depende da semântica associada a cada sentença. O computador \emph{Alpha1} executando uma sentença dessa linguagem que termine com a palavra-chave \textbf{mostra} irá exibir o resultado das contas realizadas em seu dispositivo de saída (monitor). Se a sentença tiver as palavras-chave \textbf{multiplica} e \textbf{divide} o computador \emph{Alpha1} irá multiplicar ou dividir o número após as palavras-chave pelo número que precede a mesma palavra-chave. Na execução da sentença --- \textbf{3 divide 9 mostra} --- \emph{Alpha1} dividiria 9 por 3 e mostraria o resultado 3 em um monitor.
+
+O computador \emph{Alpha1} executando uma sentença com a palavra-chave \textbf{troca} deve substituir as palavras-chave \textbf{multiplica} originais da sentença (não as trocadas) pela palavra-chave \textbf{divide} e deve substituir as palavras-chave \textbf{divide} originais da sentença (não as trocadas) pela palavra-chave \textbf{multiplica}. Isso produzirá uma nova sentença diferente da original sem a palavra-chave \textbf{troca}, a execução da sentença original deve ser encerrada e a nova sentença deve ser executada em seu lugar.  No caso \emph{Alpha1} executando a sentença --- \textbf{troca 3 divide 9 mostra} --- deve modificar a sentença original para --- \textbf{3 multiplica 9 mostra} --- e passar a executar essa nova sentença.
+
+As sentenças com a palavra-chave \textbf{troca} possuem uma semântica não convencional se comparada às sentenças que somente possuem as palavras-chave \textbf{mostra}, \textbf{multiplica} e \textbf{divide}. As sentenças convencionais definem como um computador deve fazer para obter um resultado de sua execução, elas não se relacionam com a sintaxe da própria sentença. No caso das sentenças com a palavra-chave \textbf{troca}, a semântica associada a elas é referente à sintaxe da própria sentença, e não ao resultado que se obtém com sua execução.
+
+As sentenças com a palavra-chave \textbf{troca} podem ser classificadas como sentenças de \emph{metalinguagem} por se referir à própria linguagem na qual a sentença ganha um significado~\cite{damavsevivcius2015taxonomy}. O sufixo \emph{meta} é usado para indicar uma reflexão sobre si, no caso o significado da sentença com a palavra-chave \textbf{troca} reflete sobre a própria sentença que lhe atribui um significado.
+
+Programar em uma linguagem de programação, significa criar sentenças (programas) que pertençam a essa linguagem. Esses programas ganham significado quando associados à semântica da linguagem a qual pertencem, fora do contexto da linguagem, ele não possui um significado associado. Então, por analogia, metaprogramação é a criação de um programa que reflete seu significado (semântica) sobre ele próprio e sobre outros programas que essa linguagem de programação permite criar.
+
+Por razões desconhecidas o computador \emph{Alpha1} precisou ser substituído pelo computador \emph{Beta2}, e os programas criados usando a linguagem de programação (Figura~\ref{fig:calculadora}) que \emph{Alpha1} era capaz de executar não podem ser executados por  \emph{Beta2}. A linguagem de programação (Figura~\ref{fig:calculadoraalien}) que \emph{Beta2} pode executar possui uma sintaxe diferente da linguagem de programação que \emph{Alpha1} executa. Por sorte \emph{Alpha1} pode ser adaptado para traduzir (compilar) seus programas para a linguagem que \emph{Beta2} pode executar. Note que a semântica de uma linguagem não é uma característica do computar que a executa. A semântica é uma característica da própria linguagem, podem existir vários computadores que possam executar uma mesma linguagem.
+
+Nessa nova linguagem de programação mostrada na Figura~\ref{fig:calculadoraalien}, os programas com a palavra-chave \textbf{artsom} executados por \emph{Beta2} possui a mesma semântica dos programas com a palavra-chave \textbf{mostra} executados por \emph{Alpha1}. O mesmo acontece nos programas com as palavras-chave \textbf{acort}, \textbf{acilpitlum} e \textbf{edivid} executados por \emph{Beta2}, que possuem a mesma semântica dos programas com as palavras-chave \textbf{troca}, \textbf{multiplica} e \textbf{divide} executados por \emph{Alpha1} nessa ordem.
+
+\begin{figure}[H]
+\begin{framed}
+\begin{center}
+\begin{align*}
+\langle \text{inicio} \rangle &::= \langle \text{inverte} \rangle \, \mathbf{artsom}\\	
+\langle \text{inverte} \rangle &::= \mathbf{acort} \, \langle \text{conta} \rangle \, | \, \langle \text{conta} \rangle\\
+\langle \text{conta} \rangle &::= \langle \text{numero} \rangle \, \langle \text{operação} \rangle \, \langle \text{subconta} \rangle\\
+\langle \text{subconta} \rangle &::= ( \, \langle \text{conta} \rangle \, ) \, | \, \langle \text{numero} \rangle\\
+\langle \text{operação} \rangle &::= \mathbf{acilpitlum} \, | \, \mathbf{edivid}\\
+\langle \text{numero} \rangle &::= \text{[ 1 - 9 ]?[ 0 - 9 ]+}
+\end{align*}
+\end{center}
+\end{framed} 
+\caption{Linguagem executada por \emph{Beta2} similar à linguagem da Figura~\ref{fig:calculadora} }
+\label{fig:calculadoraalien}
+\end{figure} 
+
+O programa --- \textbf{3 divide 9 mostra}, se traduzido para a linguagem que \emph{Beta2} executa, seria representado pelo programa --- \textbf{3 edivid 9 artsom}. A compilação de programas da linguagem da Figura~\ref{fig:calculadora} para a linguagem da Figura~\ref{fig:calculadoraalien} consiste em substituir as palavras-chave \textbf{mostra}, \textbf{troca}, \textbf{multiplica} e \textbf{divide} nessa ordem pelas palavras-chave \textbf{artsom}, \textbf{acort}, \textbf{acilpitlum} e \textbf{edivid} nessa ordem.
+
+A palavra-chave \textbf{verifica} da linguagem executada por \emph{Alpha1} não possui correspondência na linguagem executada por \emph{Beta2}. A compilação no caso dessas linguagens ocorre somente da linguagem definida pela gramática da Figura~\ref{fig:calculadora} para a linguagem definida pela gramática da Figura~\ref{fig:calculadoraalien}. Não definiremos a compilação da linguagem executada por \emph{Beta2} para a linguagem executada por \emph{Alpha1}. 
+
+Diferente de \textbf{troca}, que tem uma semântica associada à execução do programa, \textbf{verifica} tem uma semântica associada à compilação do programa. Durante a execução de programas com a palavra-chave \textbf{verifica} nada precisa ser feito. O computador \emph{Alpha1} pode ignorar \textbf{verifica} e executar o restante do programa. Na execução do programa --- \textbf{verifica 3 divide 9 mostra} --- o resultado obtido pelo computador \emph{Alpha1} é o mesmo resultado obtido do programa --- \textbf{3 divide 9 mostra}.
+
+Na compilação de programas com a palavra-chave \textbf{verifica} é validado se todos os números do programa são pares. Caso algum número ímpar seja encontrado, a compilação se torna inválida, um erro de compilação é produzido e o programa correspondente não é gerado. Se somente números pares forem encontrados, o restante do programa é compilado em um novo programa que pode ser executado pelo computador \emph{Beta2}.
+
+O programa --- \textbf{verifica 2 divide 8 mostra}, após ser compilada, teria como resultado o programa --- \textbf{2 edivid 8 artsom}. Em contrapartida o programa --- \textbf{verifica 3 divide 9 mostra} --- não seria compilado por conter números ímpares e um erro de compilação seria mostrado no monitor do computador \emph{Alpha1}.
+ 
+Os programas com as palavras-chave \textbf{verifica} e \textbf{troca} podem ser classificados como \emph{metaprogramas}, porque sua execução ou compilação refletem sobre eles mesmos. No caso da palavras-chave \textbf{verifica} o comportamento de verificar o programa reflete sobre o próprio programa que definiu a verificação.
+
+\section{Linguagens Compiladas com Suporte à Metaprogramação}
+\label{sec:metacompila}
+
+A escrita de programas usando metalinguagens como foi descrito é uma técnica conhecida como metaprogramação. Essa técnica permite que metaprogramas manipulem outros programas, e que programas manipulem a si próprios. Essa manipulação pode acontecer tanto durante a compilação, como durante a execução dos programas manipulados~\cite{damavsevivcius2015taxonomy}.
+
+Metaprogramação tem um amplo significado, aqui usaremos metaprogramação para permitir, transformar e verificar um programa durante sua compilação. O programa que é modificado ou validado é chamado de programa base, e o programa que realiza a manipulação é chamado de metaprograma. O metaprograma é um conjunto de classes ou funções que permitem acessar a árvore sintática abstrata (AST) do programa base durante sua compilação. Ele funciona como uma extensão do compilador, os metaprogramas podem modificar o comportamento do compilador durante suas etapas de tradução. As etapas de análise léxica, de análise sintática, da verificação de tipos, da geração de código ou qualquer outra etapa da compilação podem ter seu comportamento personalizado para compilar o programa base de um modo diferente do convencional.
+
+Xtend~\cite{rentschler2014designing}, Groovy \cite{koenig2007groovy} e Cyan~\cite{guimaraes2013cyan} são linguagens com suporte à metaprogramação em tempo de compilação. Essas linguagens permitem andar pela árvore sintática abstrata, obter informação a respeito das estruturas do programa base e modificar essas estruturas. Na Seção~\ref{sec:intcyanlang} exemplos de metaprogramação são explicados com detalhes para mostrar na prática como a aplicação dessa técnica pode funcionar.
+
+Como a metaprogramação em Cyan é um dos pilares dessa pesquisa, os detalhes de como Cyan funciona são explicados de forma detalhada. Os tópicos a respeito de Cyan não estão limitados à metaprogramação, eles vão do básico a respeito da linguagem, passando pelo protocolo de metaobjetos, terminando por explicar como as aplicações e as bibliotecas de Cyan devem estar organizadas.
+
+\section{Uma Introdução à Linguagem de Programação Cyan} 
+\label{sec:intcyanlang}
+
+Cyan é uma linguagem de programação orientada a objetos com base em protótipos, tipagem estática e suporte à metaprogramação~\cite{guimaraes2013cyan}. Os programas escritos em Cyan são compilados para Java e depois para \emph{bytecodes} que podem ser executados por uma máquina virtual Java. Em Cyan, diferente das linguagens tradicionais orientadas a objetos como C++ e Java, não são declaradas classes, são declarados protótipos usando a palavra reservada \srcstyle{object}. O protótipo de nome \srcstyle{Vehicle} mostrado no Código-Fonte~\ref{cod:protcyan} pode ser tomado como exemplo desse tipo de declaração.
+
+\begin{lstlisting}[language=Java, caption={Definição de Protótipo em Cyan}, label={cod:protcyan}]
+package main
+  
+object Vehicle
+  var String type
+
+  func init: String type { 
+    self.type = type;
+  }
+  
+  // retorna a cadeia contida na variavel type
+  func getType -> String = type;
+end
+\end{lstlisting}
+
+Todo protótipo de Cyan deve ser declarado em um arquivo de mesmo nome e deve definir na primeira linha desse arquivo a qual pacote o protótipo pertence. Para definir o pacote de um protótipo é usada a palavra reservada \srcstyle{package} seguida do nome do pacote. Os protótipos podem ter variáveis de instância, que são as variáveis declaradas dentro do protótipo, como a variável \srcstyle{type} no Código-Fonte~\ref{cod:protcyan}. As variáveis de instância são declaradas usando a palavra reservada \srcstyle{var}. Se elas forem variáveis só de leitura devem ser declaradas usando a palavra reservada \srcstyle{let}.
+
+Uma variável pode ter seu tipo indicado após as palavras reservadas \srcstyle{var} e \srcstyle{let}. No caso da variável \srcstyle{type}, \srcstyle{String} foi o tipo indicado. Dois tipos importantes em Cyan são \srcstyle{Nil} e \srcstyle{Dyn}. A palavra reservada \srcstyle{Nil} é um tipo usado para representar ausência de valor e o tipo \srcstyle{Dyn} é usado para representar qualquer valor. Variáveis do tipo \srcstyle{Nil} só podem receber o valor \srcstyle{Nil} enquanto variáveis do tipo \srcstyle{Dyn} podem receber valores de qualquer tipo e o valor \srcstyle{Nil}. As variáveis dos protótipos podem ainda ser compartilhadas entre suas instâncias, a palavra reservada \srcstyle{shared} deve ser adicionada antes de \srcstyle{var} para indicar que a variável terá uma única instância para todos os objetos do protótipo que a declarou. As variáveis que não são \srcstyle{shared} possuem uma instância para cada objeto do protótipo.
+
+Os protótipos de Cyan também são compostos de métodos que são as construções formadas pela palavra reservada \srcstyle{func} seguida de seu nome e de seu código-fonte que fica cercado por chaves ( \srcstyle{\{} e \srcstyle{\}} ). Os métodos também podem ter parâmetros como no método \srcstyle{setName:} do  Código-Fonte~\ref{cod:HerancaCyan} (\srcstyle{name} é o parâmetro) e retornos como no método \srcstyle{getType} (\srcstyle{-> String} é o retorno) do Código-Fonte~\ref{cod:protcyan}. 
+
+Os protótipos de Cyan podem ter suas variáveis de instância e métodos compartilhados através do conceito de herança. A palavra reservada \srcstyle{extends} permite a herança de um protótipo por outro. Usando herança é possível incluir os métodos e variáveis do protótipo herdado pelo protótipo que herdou e também possibilita que os métodos do protótipo herdado sejam especializados. No Código-Fonte~\ref{cod:HerancaCyan} o protótipo \srcstyle{Airplane} herda o protótipo \srcstyle{Vehicle}, incluindo a variável \srcstyle{type} e o método \srcstyle{getType}. A herança de um protótipo funciona como se os métodos e variáveis do protótipo herdado tivessem sidos implementados no protótipo que definiu a herança.
+
+\begin{lstlisting}[language=Java, caption={Herança de Protótipo em Cyan}, label={cod:HerancaCyan}]
+package main
+
+object Airplane extends Vehicle
+  var String name
+  
+  func init {
+    super init: "flying";
+    self.name = "Legacy 650"; 
+  }
+  func getName -> String = name
+  
+  func setName: String name {
+    self.name = name;
+  }
+end
+\end{lstlisting}
+
+No início da execução de uma aplicação em Cyan é criado uma instância para cada protótipo que compõe a aplicação. Essas instâncias não estão associadas a uma variável, elas são referenciadas pelo nome do protótipo. Isso permite que métodos e variáveis sejam acessados desde o início da execução, usando o nome do protótipo como mostrado na Linha 4 do Código-Fonte~\ref{cod:NewInstance}. O nome de um protótipo também aparece no código-fonte, assumindo a função de um tipo e não de um objeto, como acontece na declaração da Linha 1, que usa o nome do protótipo para definir de que tipo é a variável.
+
+\begin{lstlisting}[language=Java, caption={Nova instância de um protótipo}, label={cod:NewInstance}]
+  let plane = Airplane new;
+  plane setName: "Super Tucano";
+  var String str;
+  str = Airplane getName;
+\end{lstlisting}
+
+Para criar um novo protótipo em Cyan pode ser usado o método \srcstyle{new}. Na Linha 1 do Código-Fonte~\ref{cod:NewInstance}, é criada uma nova instância do protótipo \srcstyle{Airplane} usando esse método. A instância de \srcstyle{Airplane} referenciada pelo nome do protótipo recebe uma chamada do método \srcstyle{new} e retorna uma nova instância de \srcstyle{Airplane}. Essa nova instância é atribuída à variável \srcstyle{plane}, declarada com a palavra reservada \srcstyle{let}. A diferença entre as palavras reservadas \srcstyle{var} e \srcstyle{let} está no fato de que \srcstyle{let} só permite atribuição em sua inicialização e depois ela vira uma variável somente de leitura. Quando o tipo dessa variável não está explícito após as palavras reservadas \srcstyle{var} e \srcstyle{let}, o tipo é deduzido a partir da expressão atribuída à variável, no caso o tipo deduzido seria \srcstyle{Airplane}.
+
+Chamadas de métodos em Cyan são realizadas por meio de mensagens similar ao que ocorre em Smalltalk. Uma mensagem é composta por palavras-chave, cada uma delas com zero ou mais parâmetros. Quando uma mensagem é enviada para um objeto, ela causa a  execução de um método. Na Linha 2 do Código-Fonte~\ref{cod:NewInstance} é realizado um envio de mensagem a um objeto do tipo \srcstyle{Airplane}, que recebe essa mensagem e executa o método \srcstyle{setName:} passando os parâmetros da mensagem.
+
+A palavra reservada \srcstyle{self}, que aparece no método do Código-Fonte~\ref{cod:HerancaCyan}, é uma referência ao objeto que recebe a mensagem que dispara a execução desse método, similar a \emph{this} usado nas linguagens C++ e Java. No método \srcstyle{setName:}, a palavra reservada \srcstyle{self} faz referência ao objeto que recebeu a mensagem que dispara sua execução.
+
+Como resultado da execução de um método, um valor é retornado por sua chamada. Se o método não possuir um retorno definido, \srcstyle{Nil} é retornado. O método que possui retorno definido é declarado usando o símbolo \srcstyle{->} seguido pelo tipo do retorno, essa declaração deve ser feita após o nome do método ou depois de seus parâmetros, caso eles existam. No Código-Fonte~\ref{cod:HerancaCyan}, o método \srcstyle{getName} define um retorno do tipo \srcstyle{String}. Esse método é chamado na Linha 4 do Código-Fonte~\ref{cod:NewInstance} e seu retorno é atribuído à variável \srcstyle{str}.
+
+Em Cyan também é possível definir funções anônimas. Elas são chamadas de anônimas, pois diferentemente dos métodos, elas não tem um nome que as identifique. O Código-Fonte~\ref{cod:FuncAnonima} mostra como uma função anônima é definida e usada. Na primeira linha desse código, a variável \srcstyle{f} é definida com o tipo \srcstyle{Function<String, Nil>} e recebe uma função anônima de mesmo tipo. O comportamento da função anônima atribuída a variável \srcstyle{f} é imprimir a mensagem que for passada como parâmetro à função. Na chamada realizada na segunda linha do exemplo será impressa a \emph{string} \srcstyle{"fine"} que foi passada como parâmetro.
+
+O tipo \srcstyle{Function} usado serve para representar uma função, no caso anterior o tipo \srcstyle{Function<String, Nil>} representa uma função que tem um parâmetro do tipo \srcstyle{String} e um retorno do tipo \srcstyle{Nil}. As funções anônimas podem ter mais parâmetros, mas o último tipo da lista será sempre o tipo de retorno da função anônima. Caso só exista um tipo na lista ele será referente ao retorno, essa lista não pode ser vazia.  
+
+\begin{lstlisting}[language=Java, caption={Definição e Uso de uma Função Anônima}, label={cod:FuncAnonima}]
+	var Function<String, Nil> f = { (: String msg :) msg println };
+	f eval: "fine"; // imprime "fine"
+\end{lstlisting}
+
+\subsection{Compilador de Cyan e sua Interface com os Metaobjetos}
+\label{sec:cyanmtobstep}
+
+A compilação de um programa em Cyan acontece em etapas e a metaprogramação é suportada por meio de metaobjetos (\emph{metaobjects}) usados durante essas etapas. Esses metaobjetos~\cite{josemetalangcyan} permitem alterar o código-fonte original dos programas, eles produzem novas versões do código-fonte que são usadas no lugar da versão original. As versões de código-fonte que foram produzidas são descartadas ao final da compilação do programa.
+
+Os metaobjetos usados durante a compilação são associados ao código-fonte por meio de anotações de Cyan. As anotações são palavras-chave precedidas pelo símbolo arroba (\srcstyle{@}) e podem receber parâmetros. As anotações que recebem parâmetros são declaradas no seguinte formato --- \srcstyle{@}$\langle$nome da anotação$\rangle$\srcstyle{(} $\langle$parâmetros$\rangle$ \srcstyle{)}. Já as anotações sem parâmetros seguem esse formato --- \srcstyle{@}$\langle$nome da anotação$\rangle$.
+
+O Código-Fonte~\ref{cod:ObservableExampleCyan} é um exemplo de metaprogramação em Cyan. Nesse exemplo, o metaobjeto associado ao protótipo permite ao compilador produzir uma nova versão de \srcstyle{Person} que implementa uma versão adaptada do padrão \emph{Observer}~\cite{Gamma:1995:DPE:186897}. O metaobjeto é associado ao protótipo por meio da anotação \srcstyle{@observable}. Durante a compilação esse metaobjeto produz uma nova versão do código-fonte de \srcstyle{Person}, que é mostrada no Código-Fonte~\ref{cod:ObservableCompilerCyan}. A diferença dessa nova versão em relação à anterior é que, durante sua execução as atualizações da variável \srcstyle{name} são seguidas por uma chamada à função anônima que foi atribuída à variável \srcstyle{notify} na linha 3 do Código-Fonte~\ref{cod:ObservableExampleCyanProg}.
+
+\begin{lstlisting}[language=Java, caption={Protótipo marcado com a anotação \textbf{@observable}}, label={cod:ObservableExampleCyan}]
+@observable
+object Person
+  var String name
+end
+\end{lstlisting}
+
+No método \srcstyle{run} do Código-Fonte~\ref{cod:ObservableExampleCyanProg}, a variável \srcstyle{p} recebe uma instância de \srcstyle{Person}, que é inicializada com a função anônima \srcstyle{notify}. A chamada dessa função recebe um parâmetro do tipo \srcstyle{String} e imprime seu valor. O método \srcstyle{run} é o primeiro a ser chamado quando um programa Cyan é executado. Essa versão adaptada do padrão \emph{Observer} não notifica outros objetos, ela dispara uma função anônima que implementa o que deve ser executado quando essas variáveis de instância são atualizadas.
+
+\begin{lstlisting}[language=Java, caption={Exemplo de uso do prótotipo \textbf{Person}}, label={cod:ObservableExampleCyanProg}]
+object Program
+  func run {
+    let notify = { (: String msg :) msg println };
+    let p = Person new: notify;
+    p setName: "Ana";
+  }
+end
+\end{lstlisting}
+
+Na compilação do Código-Fonte~\ref{cod:ObservableExampleCyan}, o metaobjeto associado adiciona ao protótipo \srcstyle{Person} a variável \srcstyle{notify}, o construtor \srcstyle{init} e os métodos \srcstyle{set} para cada variável. A versão modificada do protótipo \srcstyle{Person} durante a compilação é mostrada no Código-Fonte~\ref{cod:ObservableCompilerCyan}.
+
+Em Cyan os metaobjetos são implementados em Java, e não na própria linguagem Cyan. Os metaobjetos geram versões modificadas do código Cyan compilado. Como já foi mencionado, o código fonte original não é modificado, novas versões desse código-fonte são criadas temporariamente durante a compilação do programa.
+
+\begin{lstlisting}[language=Java, caption={\textbf{Person} gerado durante a compilação}, label={cod:ObservableCompilerCyan}]
+object Person
+  var String name
+  Function<String, Nil> notify
+  
+  func init: Function<String, Nil> f {
+    self.name = "nil";
+    self.notify = f;
+  }
+  
+  func setName: String s {
+    self.name = s;
+    notify eval: s;
+  }
+end
+\end{lstlisting}
+
+A implementação do compilador de Cyan foi realizada usando a linguagem de programação Java. Essa linguagem permite usar a programação reflexiva como uma extensão à programação orientada a objetos. A principal função reflexiva utilizada na implementação do suporte à metaprogramação foi a função que realiza a carga de arquivos do tipo \emph{class} (classes Java compiladas) durante a execução de um programa em Java. Essa função foi usada para permitir que metaobjetos possam ser compilados separadamente da compilação do compilador de Cyan.
+
+A compilação dos metaobjetos desenvolvidos em Java gera como resultado arquivos do tipo \emph{class} que podem ser carregados pelo compilador de Cyan, como mostra a Figura~\ref{fig:loadmetaobj}. Nela, os retângulos de borda contínua representam o modo como os metaobjetos são carregados pelo compilador de Cyan para serem usados na compilação. As etapas desse carregamento têm início no retângulo \textbf{Etapa 1} e são ligadas por setas que indicam a próxima etapa do carregamento. Ao final dessas etapas o metaobjeto estará preparado para ser usado pelo compilador. Caso o metaobjeto não seja encontrado, o compilador gera um erro de compilação. O retângulo \textbf{Memória} representa os metaobjetos mantidos em memória pelo compilador durante a compilação.
+
+Para que os metaobjetos possam ser usados pelo compilador, suas classes devem ser implementadas na linguagem de programação Java usando as interfaces definidas pelo protocolo de metaobjetos de Cyan (\emph{PMO}). O compilador de Cyan usa objetos instanciados de classes que implementam essas interfaces em diferentes etapas da compilação. As classes e interfaces do \emph{PMO} estão localizadas no pacote \srcstyle{meta} do compilador de Cyan.
+
+Os metaobjetos são usados quando o compilador encontra alguma anotação de Cyan (exemplo \srcstyle{@observable}, Código-Fonte~\ref{cod:ObservableExampleCyan}) no programa que está sendo compilado. As anotações são uma referência direta a qual metaobjeto (arquivo do tipo \emph{class}) o compilador precisa usar durante a compilação do código fonte anotado. 
+
+\tikzstyle{objtable1} = [ rectangle split,  rectangle split parts=2, draw, text width=10em, text centered, dashed ]
+\tikzstyle{block1} = [ rectangle split,  rectangle split parts=2, draw, text width=10em, text centered, rounded corners ]
+\tikzstyle{line} = [ ->, draw ]
+\tikzstyle{linedash} = [ draw, dashed ]
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[node distance=1.3cm and 1.2cm, auto]
+    \node [block1] (init) {Etapa 1 \nodepart{second} \footnotesize Os .class dos pacotes de Cyan são carregados para a tabela de metaobjetos do compilador} ;
+    \node [block1, right=of init] (anot) {Etapa 2 \nodepart{second} \footnotesize O compilador encontra uma anotação no código-fonte do programa escrito em Cyan} ;
+    \node [block1, below=of anot] (find) {Etapa 3 \nodepart{second} \footnotesize O compilador procura na tabela pelo metaobjeto que pode ser associado à anotação} ;
+    \node [block1, right=of anot, densely dashdotted, thick] (error) {Erro \nodepart{second} \footnotesize Ocorre um erro por não ter conseguido associar a anotação a um metaobjeto da tabela} ;
+    \node [block1, right=of find, thick] (sucesso) {Etapa 4 \nodepart{second} \footnotesize Clona o metaobjeto que foi associado para ser usado pelas etapas da compilação} ;
+    \node [objtable1, below=of init] (tab) {Memória \nodepart{second} \small Tabela com os objetos dos metaobjetos que foram carregados dos .class} ;
+    
+    \path [linedash] (init) edge (tab) ;
+    \path [linedash] (tab) edge (find) ;
+    \path [line] (init) -- node{\footnotesize 1}(anot) ;
+    \path [line] (anot) -- node{\footnotesize 2}(find) ;
+    \path [line] (find) -- node{\footnotesize 3}(sucesso) ;
+    \path [line] (find) -- node[below, fill=white] {\footnotesize Não encontrou}(error);
+    \end{tikzpicture}
+	%\includegraphics[clip,scale=0.59]{conteudo/capitulos/figs/load.png}
+    \caption{Carregando metaobjeto de uma anotação de Cyan pelo compilador}
+    \label{fig:loadmetaobj}
+\end{figure}
+
+As etapas da compilação de Cyan e as interfaces do \emph{PMO} são mostradas nas Figuras~\ref{fig:cyanstep1to3},~\ref{fig:cyanstep4to6} e~\ref{fig:cyanstep7to10}. As linhas tracejadas são as etapas da compilação, elas indicam o sentido da execução por meio de setas. A compilação inicia na etapa \textbf{Parse (1)} da Figura~\ref{fig:cyanstep1to3} e termina na etapa \textbf{Generate (10)} da Figura~\ref{fig:cyanstep7to10}. A etapa \textbf{Parse (4)} liga a Figura~\ref{fig:cyanstep1to3} com a Figura~\ref{fig:cyanstep4to6} e a etapa \textbf{Parse (7)} liga a Figura~\ref{fig:cyanstep4to6} com a Figura~\ref{fig:cyanstep7to10}. As etapas que utilizam interfaces Java do \emph{PMO} são ligadas a caixas de borda tracejada que listam os nomes dessas interfaces. 
+
+As entradas e saídas de cada etapa da compilação são representadas por retângulos de borda contínua. O retângulo de onde a seta de uma etapa inicia é a entrada que a etapa recebe e o retângulo para onde a seta de uma etapa aponta são as saídas que a etapa gera. No caso da etapa \textbf{Parse (1)}, a entrada é o código-fonte \textbf{Code-A} e a saída (resultado da etapa) são o código-fonte \textbf{Code-B} e uma \textbf{AST} do compilador de Cyan.
+
+Em algumas etapas da compilação os tipos associados às expressões da AST podem não estar resolvidos. Isso significa que os tipos dos objetos da AST só estão disponíveis para consulta pelos metaobjetos em determinadas etapas da compilação. Nessas figuras, o termo \textbf{AST} se refere à árvore sintática abstrata sem informações a respeito dos tipos de seus objetos. Se o termo \textbf{AST} for seguido de \textbf{/TI} significa que os tipos dos objetos foram resolvidos parcialmente. E caso seja seguido de \textbf{/TI/In} significa que os tipos restantes também foram resolvidos. A verificação dos tipos associados a objetos da \textbf{AST} acontece diversas vezes durante a compilação.
+
+Os tipos que podem ser consultados nas etapas que recebem \textbf{/TI} são todos os encontrados fora do corpo dos métodos. Como os tipos das variáveis de instância, os tipos dos protótipos herdados, os tipos dos parâmetros e retornos dos métodos, entre outros. Os tipos internos aos métodos só podem ser consultados nas etapas que receberam \textbf{/TI/In} como entrada.
+
+Ao decorrer da compilação novas versões do código-fonte podem ser geradas. Nessas figuras o termo \textbf{Code-A} se refere ao código-fonte original, e cada nova versão gerada é representada por \textbf{Code-}$\langle$próxima letra do alfabeto$\rangle$. A nova versão de \textbf{Code-A} é \textbf{Code-B} e a próxima \textbf{Code-C}. Na etapa \textbf{Parse (1)} uma nova versão do código-fonte pode ser gerada, então antes dessa etapa temos \textbf{Code-A}, e depois dela \textbf{Code-B}. Enquanto na etapa \textbf{Type Interfaces (5)}, o código-fonte se mantém na versão \textbf{Code-D}.
+
+\tikzstyle{stateone} = [ rectangle, draw, text width=3.7em, text centered ]
+\tikzstyle{statetwo} = [ rectangle, draw, text width=3.7em, text centered, rectangle split, rectangle split parts=2 ]
+\tikzstyle{metafunc} = [ rectangle, draw, text width=11em, dashed ]
+\tikzstyle{linelink} = [ ->, draw, dashed ]
+\tikzstyle{lineinit} = [ o-, draw, dashed ]
+\tikzstyle{linestop} = [ -(, draw, dashed ]
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[node distance=0.5cm and 2.1cm, auto]
+    \node [stateone](s0) {\scriptsize Code-A\\Cyan};
+    \node [statetwo, right=of s0](s1) { \scriptsize Code-B \nodepart{second} \scriptsize AST };
+    \node [statetwo, right=of s1](s2) { \scriptsize Code-B \nodepart{second} \scriptsize AST / TI };
+    \node [statetwo, right=of s2](s3) { \scriptsize Code-C \nodepart{second} \scriptsize AST / TI };
+    \coordinate [right=of s3](end);
+    \node [metafunc, below=of s1](f0) {\tiny
+    IAction\_dpa \\
+    ICompilerInfo\_dpa \\
+    IParseMacro\_dpa \\
+    IParseWithCyanCompiler\_dpa \\
+    IParseWithoutCyanCompiler\_dpa \\
+    IActionNewPrototypes\_dpa \\
+    };
+    \node [metafunc, below=of s3](f1) {\tiny 
+    IActionProgramUnit\_ati \\
+    IActionPackage\_ati \\
+    IActionProgram\_ati \\
+    IActionNewPrototypes\_ati \\
+    };    
+    
+    \path [linelink] (s0) -- node {\scriptsize \makecell[c]{Parse\\( 1 )}} (s1) ;
+    \path [linelink] (s1) -- node {\scriptsize \makecell[c]{Type Interfaces\\( 2 )}}(s2) ;
+    \path [linelink] (s2) -- node {\scriptsize \makecell[c]{Ati Actions\\( 3 )}}(s3) ;
+    \path [linestop] (s3) -- node {\scriptsize \makecell[c]{Parse\\( 4 )}}(end) ;
+    
+    \path [linedash] ($(s1.west)!0.5!(s0.east)$) -- ($(f0.north)!0.8!(f0.north west)$) ;
+    \path [linedash] ($(s3.west)!0.5!(s2.east)$) -- ($(f1.north)!0.8!(f1.north west)$) ;
+    
+    \end{tikzpicture}
+	%\includegraphics[clip,scale=0.70]{conteudo/capitulos/figs/stepA.png}
+    \caption{Etapas 1 a 3 da compilação em Cyan}
+    \label{fig:cyanstep1to3}
+\end{figure}
+
+As etapas \textbf{Parse (1)}, \textbf{(4)} e \textbf{(7)} recebem de entrada uma versão do código-fonte em Cyan e realizam a análise sintática desse código-fonte. Ao final dessas etapas é retornado uma \textbf{AST}, e nas etapas \textbf{Parse (1)} e \textbf{(4)} é gerada uma nova versão do código-fonte. Nas etapas \textbf{Type Interfaces (2)}, \textbf{(5)} e \textbf{(8)} são resolvidos parcialmente os tipos dos objetos da \textbf{AST} e o código-fonte pode ser verificado. Os tipos de tudo que se encontra fora do corpo dos métodos é resolvido, como os tipos das variáveis de instância, os tipos dos protótipos herdados, os tipos dos parâmetros e retornos dos métodos, entre outros.
+
+A etapa \textbf{Ati Actions (3)} só acontece uma vez durante a compilação. Nessa etapa é permitido verificar e inserir código-fonte nos protótipos existentes. Também é possível renomear métodos e criar novas variáveis de instância, métodos e protótipos. Essas alterações acontecem ao final dessa etapa quando uma nova versão do código-fonte é gerada.
+
+Os tipos internos dos métodos são resolvidos nas etapas \textbf{Calc. Internal Types (6)} e \textbf{(9)}. Na etapa \textbf{Calc. Internal Types (6)} é possível inserir código-fonte dentro dos métodos e criar novos protótipos. A vantagem em usar essa etapa e não a etapa anterior para realizar essas tarefas, está no fato de que aqui existem informações a respeito do código-fonte que não estavam disponíveis na etapa anterior. Como os tipos das variáveis e dos tipos das expressões locais ao método.
+
+A etapa final da compilação é a \textbf{Generate (10)}. Ela é responsável por transformar a \textbf{AST/TI/In} da última versão do código-fonte Cyan em código-fonte Java. Essa etapa e as etapas \textbf{Type Interfaces (2)}, \textbf{Type Interfaces (5)}, \textbf{Parse (7)}, \textbf{Type Interfaces (8)} e \textbf{Calc. Internal Types (9)} não geram novas versões do código-fonte.
+
+Em cada etapa o compilador verifica se o metaobjeto associado a uma anotação implementa uma interface associada à essa etapa. Caso implemente, ele chama os métodos dessas interfaces referentes à etapa. Nas etapas \textbf{Parse (1)} e \textbf{Parse (4)}, se um método for inserir código-fonte, ele insere esse código-fonte após a anotação e prossegue com a compilação a partir do código-fonte inserido. Já nas etapas \textbf{Ati Actions (3)} e \textbf{Calc. Internal Types (6)} o código-fonte é inserido após a etapa terminar. A etapa \textbf{Type Interfaces (8)} é similar à etapa \textbf{Ati Actions (3)}, que como as etapas \textbf{Calc. Internal Types (6)} e \textbf{Calc. Internal Types (9)}, só permitem realizar conferências do código-fonte, não permitem inserções como as etapas anteriores.
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[node distance=0.5cm and 2.4cm, auto]
+    \coordinate (init);
+    \node [statetwo, right=of init](s4) { \scriptsize Code-D \nodepart{second} \scriptsize AST };
+    \node [statetwo, right=of s4](s5) { \scriptsize Code-D \nodepart{second} \scriptsize AST / TI };
+    \node [statetwo, right=of s5, text width=5.0em](s6) { \scriptsize Code-E \nodepart{second} \tiny AST / TI / In };
+    \coordinate [right=of s6](end);
+    \node [metafunc, below=of s4, xshift=-0.7cm](f0) {\tiny
+    IAction\_dpa \\
+    ICompilerInfo\_dpa \\
+    IParseMacro\_dpa \\
+    IParseWithCyanCompiler\_dpa \\
+    IParseWithoutCyanCompiler\_dpa \\
+    IActionNewPrototypes\_dpa \\
+    };
+    \node [metafunc, below=of s5, text width=10.2em](f1) {\tiny 
+    ICheckProgramUnit\_before\_dsa \\
+    ICheckDeclaration\_ati2 \\
+    };    
+    \node [metafunc, below=of s6, text width=12.5em, xshift=0.8cm](f2) {\tiny 
+    IAction\_dsa \\
+    IActionVariableDeclaration\_dsa \\
+    IActionMessageSend\_dsa \\
+    ICompileTimeDoesNotUnderstand\_dsa \\
+    ICheckMessageSend\_dsa\\
+    };    
+    
+    \path [lineinit] (init) -- node {\scriptsize \makecell[c]{Parse\\( 4 )}} (s4) ;
+    \path [linelink] (s4) -- node {\scriptsize \makecell[c]{Type Interfaces\\( 5 )}}(s5) ;
+    \path [linelink] (s5) -- node {\scriptsize \makecell[c]{Calc. Internal Types\\( 6 )}}(s6) ;
+    \path [linestop] (s6) -- node {\scriptsize \makecell[c]{Parse\\( 7 )}}(end) ;
+    
+    \path [linedash] ($(s4.west)!0.665!(init.east)$) -- ($(f0.north)!0.75!(f0.north west)$) ;
+    \path [linedash] ($(s5.west)!0.38!(s4.east)$) -- ($(f1.north)!0.8!(f1.north west)$) ;
+    \path [linedash] ($(s6.west)!0.2!(s5.east)$) -- ($(f2.north)!0.9!(f2.north west)$) ;
+    
+    \end{tikzpicture}
+	%\includegraphics[clip,scale=0.70]{conteudo/capitulos/figs/stepB.png}
+    \caption{Etapas 4 a 6 da compilação em Cyan}
+    \label{fig:cyanstep4to6}
+\end{figure}
+
+A interface \srcstyle{IAction\_dpa} está associada às etapas \textbf{Parse (1)} e \textbf{(4)}, conforme mostrado no retângulo pontilhado a esquerda da Figura~\ref{fig:cyanstep1to3}. Essa interface permite adicionar código-fonte após a anotação relacionada ao metaobjeto que implementou essa interface. Quando o compilador encontra uma anotação dessas, ele chama o método \srcstyle{dpa\_codeToAdd} da interface \srcstyle{IAction\_dpa} e adiciona o código-fonte retornado por esse método após a anotação encontrada. A compilação prossegue a partir do código-fonte inserido por esse método.
+
+Usando metaobjetos de Cyan é possível definir Linguagens Específicas de Domínio (DSL). O metaobjeto \srcstyle{@concepts} e tem o seguinte formato \srcstyle{@concepts\{*} $\langle$código-fonte da DSL$\rangle$ \srcstyle{*\}} e permite que uma DSL seja acoplada a essa anotação. Ainda nas etapas \textbf{Parse (1)} e \textbf{(4)} é possível realizar a análise (\emph{parse}) das DSLs por meio das interfaces \srcstyle{IParseWithCyanCompiler\_dpa} e \srcstyle{IParseWithoutCyanCompiler\_dpa}. 
+
+Nas etapas \textbf{Parse (1)} e \textbf{(4)} ainda temos a interface \srcstyle{IActionNewPrototypes\_dpa}, que permite criar novos protótipos de Cyan. Outra interface que permite criar novos protótipos de Cyan é a interface \srcstyle{IActionNewPrototypes\_ati}, associada à etapa \textbf{Ati Actions (3)} da compilação.
+
+Passando à etapa \textbf{Ati Actions (3)}, temos a interface \srcstyle{IActionProgramUnit\_ati}, que permite renomear métodos, criar novos protótipos, criar variáveis de instância, criar variáveis compartilhadas e criar novos métodos. Nessa mesma etapa as interfaces \srcstyle{IActionPackage\_ati} e \srcstyle{IActionProgram\_ati} permitem adicionar código-fonte a protótipos de um pacote e a todos os protótipos do programa respectivamente.
+
+A interface \srcstyle{IAction\_dsa} da etapa \textbf{Calc. Internal Types (6)} permite adicionar código-fonte após as anotações associadas aos metaobjetos e criar novos protótipos. Nessa etapa temos também a interface \srcstyle{IActionVariableDeclaration\_dsa}, que permite adicionar  código-fonte após as declarações de variáveis locais. E temos a interface \srcstyle{IActionMessageSend\_dsa} usada para interceptar mensagens para o método anotado. Nessa linha de interceptar mensagens para métodos é possível usar a interface \srcstyle{ICheckMessageSend\_dsa} para validar essas mensagens.
+
+Nas etapas \textbf{Type Interfaces (5)}, \textbf{(8)} e \textbf{Calc. Internal Types (9)} o \emph{PMO} fornece diversas interfaces que permitem verificar a AST na procura de inconsistências. Caso alguma inconsistência seja encontrada, poderá ser gerado um erro de compilação. Para percorrer a AST é possível usar o padrão de projeto \emph{Visitor} suportado pelo compilador.
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[node distance=0.5cm and 1.8cm, auto]
+    \coordinate (init);
+    \node [statetwo, right=of init](s7) { \scriptsize Code-E \nodepart{second} \scriptsize AST };
+    \node [statetwo, right=of s7](s8) { \scriptsize Code-E \nodepart{second} \scriptsize AST / TI };
+    \node [statetwo, right=of s8, text width=5.0em](s9) { \scriptsize Code-E \nodepart{second} \tiny AST / TI / In };
+    \node [stateone, right=of s9](s10) {\scriptsize Java Code };
+    \node [metafunc, below=of s8, text width=8.5em, xshift=-2cm](f0) {\tiny
+    ICheckDeclaration\_ati3 \\
+    ICheckSubprototype\_ati3 \\
+    ICheckOverride\_ati3 \\
+    };
+    \node [metafunc, below=of s9, text width=8.5em, xshift=-1.3cm](f1) {\tiny 
+    ICheckDeclaration\_dsa2 \\
+    IListAfter\_ati \\
+    ICheckMessageSend\_dsa2 \\
+    };
+    \node [metafunc, below=of s10, text width=8em, xshift=-1cm, yshift=-0.32cm](f2) {\tiny 
+    IAction\_cge \\
+    IActionAssignment\_cge \\
+    };    
+    
+    \path [lineinit] (init) -- node {\scriptsize \makecell[c]{Parse\\( 7 )}} (s7) ;
+    \path [linelink] (s7) -- node {\scriptsize \makecell[c]{Type Interfaces\\( 8 )}}(s8) ;
+    \path [linelink] (s8) -- node {\scriptsize \makecell[c]{Calc. Internal Types\\( 9 )}}(s9) ;
+    \path [linelink] (s9) -- node {\scriptsize \makecell[c]{Generate\\( 10 )}}(s10) ;
+    
+    \path [linedash] ($(s7.west)!0.5!(s8.east)$) -- ($(f0.north)!0.1!(f0.north east)$) ;
+    \path [linedash] ($(s8.west)!0.5!(s9.east)$) -- ($(f1.north)!0.273!(f1.north west)$) ;
+    \path [linedash] ($(s9.west)!0.5!(s10.east)$) -- ($(f2.north)!0.6!(f2.north west)$) ;
+    
+    \end{tikzpicture}
+	%\includegraphics[clip,scale=0.68]{conteudo/capitulos/figs/stepC.png}
+    \caption{Etapas 7 a 10 da compilação em Cyan}
+    \label{fig:cyanstep7to10}
+\end{figure}
+
+Não se pode deixar de comentar sobre os parâmetros do tipo \srcstyle{ICompiler\_ati} de métodos das interfaces e classes do \emph{PMO}, como no método \srcstyle{ati\_renameMethod} da interface \srcstyle{IActionProgramUnit\_ati}. As variáveis desse tipo fornecem ao metaobjeto um acesso restrito aos métodos do compilador de Cyan. Esse acesso aos objetos do compilador permite que os métodos implementados procurem por estruturas do código-fonte, emitam erros de compilação e recuperem informações a respeito do processo de compilação. De modo simplificado, os parâmetros do tipo \srcstyle{ICompiler\_ati} permitem que os métodos do \emph{PMO} acessem o compilador de Cyan.
+
+\subsection{Criação de Programas e Pacotes em Cyan}
+\label{sec:cyanlibapp}
+
+Programas e pacote em Cyan são organizados a partir de uma pasta raiz que leva o nome do programa ou do pacote. Nos programas dentro da pasta raiz deve existir o código-fonte do programa e o arquivo \emph{proj.pyan}, que indica quais pacotes esse programa utiliza. Nos pacotes o código-fonte deve ser colocado direto na pasta raiz e o arquivo \emph{proj.pyan} não deve ser adicionado, pois ele é exclusivo dos programas de Cyan.
+
+O arquivo \emph{proj.pyan} define quais pacotes um programa está usando. O estudo de caso do Capítulo~\ref{cap:estudo} usa os pacotes \srcstyle{treplica} e \srcstyle{cyan.math} como mostrado no Código-Fonte~\ref{cod:ProjFileCaso}, que mostra o arquivo \emph{proj.pyan} do estudo de caso. O pacote padrão de Cyan (\srcstyle{cyan.lang}) não precisa ser adicionada, ele é incluído por definição pelo compilador.
+
+\begin{lstlisting}[language=Java, caption={Arquivo \emph{proj.pyan} do estudo de caso}, label={cod:ProjFileCaso}]
+program 
+
+  package treplica at "lib/treplica"
+  package cyan.math at "lib/cyan"
+\end{lstlisting}
+
+No desenvolvimento de programas e pacotes em Cyan é possível usar trechos de código fonte em Java diretamente. Para evitar misturar código-fonte Java em aplicações de Cyan é possível desenvolver pacotes que funcionam como casca para o código-fonte Java, que será incorporado em Cyan. Essa pesquisa utiliza uma versão de Cyan que ainda não permite importar pacotes e classes de Java na mesma sintaxe usadas para Cyan.
+
+O uso de código Java em Cyan é feito por um metaobjeto que está associado à anotação \srcstyle{@javacode}. O código Java implementado dessa forma não será traduzido pelo compilador. Na fase \textbf{Generate (10)} de geração de código em Java, o conteúdo associado a cada anotação será gerada sem modificações. Isto é, a anotação do Código-Fonte~\ref{cod:JavaCyanImport} irá gerar na fase \textbf{Generate (10)} exatamente o que está entre os símbolos \textbf{$<<<$} e \textbf{$>>>$}. Cyan permite que outras sequências de símbolos sejam usadas, nessa pesquisa usamos a sequência de símbolos \textbf{$<<<$} e \textbf{$>>>$}. O Código-Fonte~\ref{cod:JavaCyanImport} mostra como o código-fonte Java pode ser incorporado em Cyan usando esse metaobjeto.
+
+\begin{lstlisting}[language=Java, caption={Uso de Código Java em Cyan}, label={cod:JavaCyanImport},float]
+@javacode<<< import java.io.Serializable; >>>
+\end{lstlisting}
+
+\section{Xtend e suas Anotações Ativas}
+\label{sec:xtendanot}
+
+Esta seção apresenta a linguagem de programação Xtend e mostra como suas anotações ativas funcionam. Essa linguagem não foi usada no desenvolvimento prático desse trabalho, mas ela é uma forma alternativa de demonstrar o conceito de metaprogramação em compilação.
+
+Como não existe uma definição única de como deveria ser a metaprogramação em compilação, cada linguagem que a suporta apresenta uma definição adaptada a sua implementação. O conceito de metaprogramação em compilação entre essas linguagens é similar, mas a aplicação do conceito é característica de cada uma delas.
+
+Xtend~\cite{rentschler2014designing} é uma linguagem de programação similar à linguagem Java, com melhorias em diversos aspectos. A compilação de código-fonte em Xtend produz código-fonte em Java e a metaprogramação é suportada por meio de suas anotações ativas (\textit{active annotations}), que são uma evolução das anotações (\textit{annotations}) do Java. As anotações ativas permitem que sejam desenvolvidos programas que acrescentam funcionalidades à compilação de aplicações em Xtend. Essas anotações ativas são equivalentes às anotações de Cyan.
+
+A implementação de características e comportamentos das aplicações que usam anotações ativas passa a ser realizada também pelo compilador e não somente pelos desenvolvedores~\cite{rentschler2014designing}. Essas anotações ativas interferem na compilação da aplicação realizando transformações que alteram o código-fonte produzido pelo compilador.
+
+As anotações ativas aparecem no código-fonte de aplicações em Xtend como as anotações em Java. Elas são formadas pelo nome da anotação precedidas pelo símbolo arroba (\srcstyle{@}). No intuito de facilitar a comparação entre os exemplos de Java e Xtend, vamos iniciar o exemplo em Xtend por um trecho de código que utiliza o padrão \textit{Observer}.
+
+O compilador de Xtend cria uma estrutura intermediária para representar em memória o código-fonte Java. Para preservar essa associação ao longo do texto, vamos chamar essa estrutura de Estrutura Java. A Figura~\ref{fig:xtendstepscomp} mostra as quatro etapas da compilação considerando a Estrutura Java. As etapas na figura são representadas pelas setas e as entradas e saídas de cada etapa são representadas pelas caixas. 
+
+\tikzstyle{objtable} = [ rectangle, draw, text width=10em, text centered, dashed ]
+\tikzstyle{block} = [ rectangle, draw, text width=10em, text centered, rounded corners ]
+
+\begin{figure}[H]
+	\centering
+	\begin{tikzpicture}[node distance=1.6cm and 1.4cm, auto]
+	\node [block, text width=6em] (regs) {\footnotesize Código-Fonte\\Xtend} ;
+	\node [block, text width=6em, right=of regs] (tran) {\footnotesize Estrutura\\Java} ;
+	\node [block, text width=6em, below=of tran] (vali) {\footnotesize Estrutura\\Java} ;
+	\node [block, text width=6em, right=of vali] (genc) {\footnotesize Estrutura\\Java} ;
+    \node [block, text width=6em, right=of genc] (acab) {\footnotesize Código-Fonte\\Java} ;
+	
+	\path [linelink] (regs) -- node {\scriptsize \makecell[c]{Registros\\Globais}} (tran) ;
+	\path [linelink] (tran) -- node {\scriptsize \makecell[c]{Transformações}} (vali) ;
+	\path [linelink] (vali) -- node {\scriptsize \makecell[c]{Validações\\.}} (genc) ;
+	\path [linelink] (genc) -- node {\scriptsize \makecell[c]{Código-Fonte\\Geração}} (acab) ;
+	\end{tikzpicture}
+	\caption{Etapas da compilação em Xtend}
+	\label{fig:xtendstepscomp}
+\end{figure}
+
+Na primeira etapa (\textit{Registros Globais}) é possível criar as classes e interfaces Java diretamente na Estrutura Java. Em seguida, durante a etapa de transformação é possível adicionar, remover e alterar o conteúdo interno das classes e interfaces pertencentes à Estrutura Java.
+
+A terceira etapa da compilação consiste em validar as definições e os usos dos tipos Java presentes na Estrutura Java. A quarta e última etapa permite intervir na forma como código-fonte Java será gerado a partir da Estrutura Java. Todas as etapas de compilação podem utilizar de anotações ativas para manipular a Estrutura Java.
+
+Os Códigos-Fonte~\ref{cod:ObservadorInterfaceJava} a~\ref{cod:ObservadorClassElementoJava} mostram o programa em Java que implementa o padrão de projeto \textit{Observer}. Esse programa será comparado a um programa implementado em Xtend~\cite{blewitt2005automatic}~\cite{miao2014compile} para mostrar como as anotações ativas funcionam. Os Códigos-Fonte~\ref{cod:ObserverXtend} e~\ref{cod:ObservableBeanXtend} mostram a aplicação implementada em Xtend. O padrão \textit{Observer} utiliza objetos associados a duas classes, uma dependente e outra mantenedora. Ao decorrer da execução dessas aplicações, os objetos da classe dependente são alertados quando os objetos das classe mantenedora são atualizados.
+
+\begin{lstlisting}[language=Java, caption={Interfaces usadas para implementar o padrão \textit{Observer} em Java}, label={cod:ObservadorInterfaceJava}]
+public interface Element {
+  public void addObserver(Observer obs);
+  public void notifiesObservers();
+}
+
+public interface Observer {
+  public void update(Object obj);
+}
+\end{lstlisting}
+
+O Código-Fonte~\ref{cod:ObservadorInterfaceJava} mostra duas interfaces: \srcstyle{Element}, que corresponde à interface que deve ser implementada pela classe mantenedora e \srcstyle{Observer}, que  define a implementação que deve ser atendida pelas classes dependentes. A interface \srcstyle{Element} tem o método \srcstyle{addObserver} usado para registrar dependentes e o método \srcstyle{notifiesObservers} usado para informar os dependentes que o objeto da classe mantenedora foi atualizado. Na interface \srcstyle{Observer} existe apenas o método \srcstyle{update}, que implementa o comportamento associado ao objeto da classe dependente após uma atualização do objeto da classe mantenedora. Esse método é chamado na execução do método \srcstyle{notifiesObservers}.
+
+\begin{lstlisting}[language=Java, caption={Exemplo de implementação da interface \textbf{Observer}}, label={cod:ObservadorClassObservadorJava}]
+public class Reader implements Observer {
+  private int id;
+
+  public Reader(int id) {
+    this.id = id;
+  }
+
+  public void update(Object obj) {
+    System.out.println(
+    String.format("%d -> %s", this.id, (String)obj));
+  }
+}
+\end{lstlisting} 
+
+O Código-Fonte~\ref{cod:ObservadorClassObservadorJava} mostra a implementação de uma classe dependente, ela implementa a interface \srcstyle{Observer}. Nessa classe, o método \srcstyle{update} é reescrito para exibir uma mensagem toda vez que for chamado. O objeto da classe dependente é registrado pelo objeto de uma classe mantenedora, como mostrado no Código-Fonte~\ref{cod:ObservadorJava}. O objeto da classe mantenedora só pode registrar objetos de classes que implementem a interface \srcstyle{Observer}, pois ela espera que a classe registrada possua o método \srcstyle{update} descrito pela interface \srcstyle{Observer}.
+
+\begin{lstlisting}[language=Java, caption={Exemplo de uso das classes implementadas em Java}, label={cod:ObservadorJava}]
+public class Main {
+  public static void main(String args []){
+    Board board = new Board();
+    Reader reader = new Reader(1);
+    board.addObserver(reader);
+    board.setText("Text 1");
+  }
+}
+\end{lstlisting}
+
+No Código-Fonte~\ref{cod:ObservadorClassElementoJava} temos a implementação de uma classe mantenedora, ela implementa a interface \srcstyle{Element}, respeitando o comportamento dos métodos \srcstyle{addObserver} e \srcstyle{notifiesObservers}. A desvantagem do uso de uma interface é a necessidade de implementar esses métodos sempre que \srcstyle{Element} for usada, uma vez que essa implementação será similar na maioria das vezes que for realizada.
+
+O Código-Fonte~\ref{cod:ObservadorJava} mostra como os objetos dos tipos \srcstyle{Reader} e \srcstyle{Board} interagem. No método \srcstyle{main} é construído um objeto do tipo \srcstyle{Reader} e um objeto do tipo \srcstyle{Board}, que recebe \srcstyle{reader} como seu dependente. Quando o objeto \srcstyle{board} é atualizado, o objeto \srcstyle{reader} é notificado.
+
+\begin{lstlisting}[language=Java, caption={Exemplo de implementação da interface \textbf{Element}}, label={cod:ObservadorClassElementoJava}]
+public class Board implements Element {
+  private List <Observer> observers;
+  private String text;
+
+  public void setText(String text) {
+    this.text = text;
+    notifiesObservers();
+  }
+
+  public void addObserver(Observer obs) {
+    this.observers.add(obs);
+  }
+
+  public void notifiesObservers() {
+    for(Observer obs : this.observers){
+      obs.update(this.text);
+    }
+  }
+}
+\end{lstlisting}
+
+O Código-Fonte~\ref{cod:ObserverXtend} mostra a classe \srcstyle{ObservableBean}, que é equivalente à classe mantenedora do exemplo em Java. Uma classe dependente não é necessária em Xtend, pois podemos usar uma função anônima para substituir o método \srcstyle{update} dessa classe. Essa função anônima é passada como parâmetro a \srcstyle{addPropertyChangeListener} para que ela seja atribuída ao objeto \srcstyle{ObservableBean}. Na segunda etapa da compilação (Figura~\ref{fig:xtendstepscomp}), o método \srcstyle{addPropertyChangeListener} é adicionado à classe \srcstyle{ObservableBean} pela anotação ativa \srcstyle{@Observable}.
+
+As funções anônimas em Xtend são declaradas entre colchetes (\srcstyle{[} e \srcstyle{]}) e seus parâmetros são separados do corpo da função por uma barra vertical (\srcstyle{|}). O retorno de uma função anônima é a última expressão que ela define. Uma função anônima tem o seguinte formato, \srcstyle{[}  $\langle$parâmetros$\rangle$ \srcstyle{|}  $\langle$corpo$\rangle$  $\langle$retorno$\rangle$\srcstyle{]}.
+
+Durante a compilação, as estruturas marcadas com anotações podem ser alteradas, como \srcstyle{ObservableBean}, que está marcada com a anotação \srcstyle{@Observable}. A vantagem dessa metaprogramação é reduzir o código fonte e possibilitar o reuso. Estando implementada a anotação ativa que define o padrão \textit{Observer}, diferentes classes podem ser anotadas, não sendo mais necessário escrever os métodos \srcstyle{addObserver} e \srcstyle{notifiesObservers} inúmeras vezes.
+
+Em Xtend o operador \srcstyle{=>} pode ser usado após a criação de um objeto para chamar métodos da nova instância, como no Código-Fonte~\ref{cod:ObserverXtend}, em que o método \srcstyle{addPropertyChangeListener} é chamado passando como parâmetro a função anônima --- \srcstyle{[println('''property <<propertyName>> equal <<newValue>>''')]} --- que Xtend compila como sendo uma chamada à \srcstyle{addPropertyChangeListener([...])}. Ele também permite a construção --- $\langle$nome da variável$\rangle$ \srcstyle{=} $\langle$valor atribuído$\rangle$ --- que Xtend modifica para a uma chamada ao método \srcstyle{setName("Max")} dessa nova instância durante a compilação.
+
+Na classe \srcstyle{ObservableExample} um objeto de \srcstyle{ObservableBean} é criado na Linha 8 do Código-Fonte~\ref{cod:ObserverXtend}. E após a criação do objeto é enviada uma mensagem \srcstyle{addPropertyChangeListener} para ele. Na sequência, o atributo \srcstyle{name} é atualizado (uma mensagem \srcstyle{setName} é enviada para o objeto) disparando a função anônima que foi passada para \srcstyle{addPropertyChangeListener}. Nesse exemplo usamos a função anônima passada como parâmetro a \srcstyle{addPropertyChangeListener}, ao invés de declarar o método \srcstyle{update}. Isso permite definir o comportamento de cada instância da classe \srcstyle{ObservableBean} em sua inicialização.
+
+\begin{lstlisting}[language=Java, caption={Exemplo de uso em Xtend}, label={cod:ObserverXtend}]
+@Observable
+class ObservableBean {
+  String name
+}
+
+class ObservableExample {
+  def static void main(String[] args) {
+    new ObservableBean => [
+      addPropertyChangeListener [
+        println('''property <<propertyName>> equal <<newValue>>''')
+      ]
+      name = "Max"
+    ]
+  }
+}
+\end{lstlisting}
+
+Para que possamos analisar o comportamento desse programa diretamente, vamos entender como a anotação ativa \srcstyle{@Observable} modifica a classe \srcstyle{ObservableBean} e qual código Java é obtido como resultado dessa compilação. No Código-Fonte~\ref{cod:ObservableBeanXtend} temos o resultado do código modificado de \srcstyle{ObservableBean}. Esse resultado é uma classe em Java que mantém o atributo \srcstyle{name} e recebe a adição de três métodos e de um atributo privado. Os métodos adicionados \srcstyle{getName} e \srcstyle{setName} permitem o acesso ao atributo privado \srcstyle{name} e o método \srcstyle{setName} também alertam os dependentes de que esse atributo foi atualizado. Esses métodos são seguidos do atributo \srcstyle{change} e do método \srcstyle{addPropertyChangeListener}, que é responsável por registrar a função anônima no objeto \srcstyle{ObservableBean}.
+
+No Código-Fonte~\ref{cod:ObservableBeanXtend}, a variável de instância do tipo \srcstyle{PropertyChangeSupport} é usada para implementar o padrão \textit{Observer}. Os objetos dessa classe recebem uma função anônima (representado por um objeto da classe \srcstyle{PropertyChangeListener}) e associam sua chamada a mudanças de outro objeto. Nessa implementação o método \srcstyle{addPropertyChangeListener} registra essa função anônima. A chamada dessa função anônima ocorre quando o método \srcstyle{firePropertyChange} for chamado. Durante a execução quando o método \srcstyle{setName} é chamado, ele chama o método \srcstyle{firePropertyChange}, que chama a função anônima que foi registrada por \srcstyle{addPropertyChangeListener}. 
+
+No Código-Fonte~\ref{cod:ObserverXtend} na Linha 10, os parâmetros recebidos pela chamada do método \srcstyle{firePropertyChange} são usados na função anônima registrada pelo método \srcstyle{addPropertyChangeListener}. O primeiro parâmetro (\srcstyle{"name"}) é representado na função anônima por \srcstyle{<<propertyName>>} e o parâmetro (\srcstyle{name}) é representado na mesma função anônima por \srcstyle{<<newValue>>}.
+
+\begin{lstlisting}[language=Java, caption={Classe Java \textbf{ObservableBean} gerada pelo compilador Xtend}, label={cod:ObservableBeanXtend}]
+public class ObservableBean {
+  private String name;
+
+  public String getName() {
+    return this.name;
+  }
+
+  public void setName(final String name) {
+    change.firePropertyChange("name", this.name, name);
+    this.name = name;
+  }
+
+  private PropertyChangeSupport change = 
+    new PropertyChangeSupport(this);
+
+  public void addPropertyChangeListener(
+  final PropertyChangeListener listener) {
+    this.change.addPropertyChangeListener(listener);
+  }
+}
+\end{lstlisting}
+
+A anotação ativa \srcstyle{@Observable} que gera a classe do Código-Fonte~\ref{cod:ObservableBeanXtend} está dividida em duas partes. A primeira é responsável por escrever os métodos de acesso a todos os atributos da classe anotada com \srcstyle{@Observable}, e a segunda parte é responsável por gerar o atributo \srcstyle{change} e o método \srcstyle{addPropertyChangeListener}.

@@ -1,0 +1,37 @@
+package main
+
+object MapCanvas
+
+  shared var String buffer
+  
+  private func initOnce {
+    self.buffer = "";
+  }
+  
+  func title {
+    write: "+" ++ (Native stringRepeat: "=", (Const MAP_WIDTH) - 2) ++ "+\n";
+    let Int spaceSize = ((Const MAP_WIDTH) - 2 - (("Rogue Treplica") size)) / 2;
+    let String space = (Native stringRepeat: " ", spaceSize);
+    write: "|" ++ space ++ "Rogue Treplica" ++ space ++ "|\n";
+    write: "+" ++ (Native stringRepeat: "=", (Const MAP_WIDTH) - 2) ++ "+\n";
+  }
+  
+  func footer {
+    write: "+" ++ (Native stringRepeat: "=", (Const MAP_WIDTH) - 2) ++ "+";
+  }
+  
+  func clean {
+    self.buffer = "";
+    Window cleanTextMap;
+  }
+  
+  func flush {
+    Window setTextMap: self.buffer;
+    self.buffer = "";
+  }
+  
+  func write: String text {
+    self.buffer = self.buffer ++ text;
+  }
+  
+end

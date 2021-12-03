@@ -1,0 +1,42 @@
+\chapter*[Conclusão]{Conclusão}
+\addcontentsline{toc}{chapter}{Conclusão}
+\label{cap:conclusao}
+
+A metaprogramação foi usada nessa pesquisa para transformar aplicações não distribuídas em aplicações replicadas de modo transparente. O \textit{framework} Treplica forneceu a implementação da replicação para essas aplicações e a metaprogramação foi suportada pela linguagem Cyan através de seus metaobjetos.
+
+Essa abordagem mostrou como implementar aplicações que sejam menos acopladas à replicação, e como manter seu código mais coeso. Essa afirmação pode ser verificada com base na comparação das implementações de aplicações replicadas que usaram da metaprogramação, em relação às aplicações replicadas que não usam de metaprogramação. É possível comparar os exemplos da Seção~\ref{sec:treplicaframe} com os da Seção~\ref{sec:treplicacyanmeta} e verificar que o segundo exemplo sofreu uma redução do código fonte em comparação ao primeiro. No segundo exemplo a replicação não exigiu que novos protótipos fossem criados explicitamente, ou que a máquina de Treplica fosse inicializada diretamente. Sua implementação ficou restrita a marcar algumas estruturas do programa que foi replicado. O código-fonte mostrado na Seção~\ref{sec:treplicacyanmeta} é mais coeso aos requisitos funcionais do programa do que o código fonte mostrado na Seção~\ref{sec:treplicaframe}. O acoplamento da replicação com o restante do programa é menor na Seção~\ref{sec:treplicacyanmeta} do que o acoplamento presente no código fonte da Seção~\ref{sec:treplicaframe}.
+
+A metaprogramação também foi usada nessa pesquisa para validar o código-fonte das aplicações replicadas durante sua compilação, com o objetivo de encontrar trechos de código não deterministas. As Seções~\ref{sec:treplicacyanmetasecret} e~\ref{sec:estudodtcomp} mostram como a metaprogramação foi usada para realizar essa validação. O problema de não determinismo apresentado na Seção~\ref{sec:nddatahora} é um exemplo de inconsistência que não deve estar presente nas aplicações replicadas, pois isso levaria a um comportamento inconsistente da aplicação.
+
+O uso da metaprogramação permitiu que as tarefas de desenvolver e verificar o código-fonte fossem automatizadas. Os códigos-fonte que implementam requisitos não funcionais facilitam essa automatização por serem mais padronizados do que dos demais códigos-fonte. Isso não impede que requisitos funcionais possam ser implementados usando metaprogramação, só é menos comum encontrar um requisito funcional que possui um código-fonte padronizado em diferentes implementações.
+
+Abraçando uma visão menos conservadora é possível comparar os metaprogramas a um programador especializado em trabalhar com determinado requisito não funcional, que irá auxiliar as equipes de desenvolvimento a implementar esse requisito e a verificar se suas limitações e exigências são atendidas pelo restante do programa.
+
+A construção de uma base de metaprogramas que resolva a implementação dos requisitos não funcionais mais corriqueiros pode reduzir o tempo de desenvolvimento, padronizar a implementação desses requisitos e reduzir o tempo de criação das aplicações. Indiretamente ela também permite que o nível de conhecimento específico da equipe a respeito de determinados requisitos não seja tão elevado, o que diminui a necessidade de treinamento da equipe e estudos preliminares à implementação das aplicações.
+
+Construir metaobjetos para automatizar o desenvolvimento e inspecionar requisitos não funcionais diferentes da replicação, não é a única extensão possível a essa pesquisa. Ela pode ser estendida para medir de modo formal como a metaprogramação melhora a coesão e reduz o acoplamento do código-fonte. O trabalho de Hitz e Montazeri~\cite{hitz1995measuring} fornece uma alternativa de como medir a coesão e o acoplamento do código-fonte de modo quantitativo. Sendo assim, ele pode ser usado como suporte a um possível trabalho futuro.
+
+Uma linha de pesquisa mais teórica é a classificação de quais mecanismos de atualização e verificação são comuns entre diferentes requisitos não funcionais. Isso ajudaria a desenvolver metaobjetos que possam ser reutilizados com diferentes requisitos não funcionais. O modo como esses requisitos influenciam o código-fonte também poderia ser analisado.
+
+Nessa pesquisa ficou em aberto a modificação do metaobjeto \textbf{treplicaAction} para que a verificação do não determinismo atenda a todos os códigos-fonte sem as limitações deixadas por essa pesquisa. O arquivo de regras usado nessa validação também poderia ser substituído por uma anotação de Cyan.
+
+A linguagem Xtend aparece nesse trabalho para servir de comparação com a linguagem Cyan. Em novas pesquisas, outras linguagens que permitem metaprogramação em compilação podem ser estudadas para identificar quais características fornecidas por elas permitem desenvolver código-fonte mais coeso e menos acoplado. Uma comparação detalhada entre essas linguagens seria importante para classificar quais características são mais versáteis na automação do desenvolvimento e na verificação do código-fonte independente de requisitos não funcionais específicos.
+
+Do ponto de vista teórico visando compreender, classificar e propor melhorias à metaprogramação em compilação, ou do ponto de vista prático de aplicar a metaprogramação em compilação a requisitos não funcionais como no caso da replicação, essa pesquisa pode ser usada como uma referência para futuros trabalhos que pretendem tornar o desenvolvimento do código-fonte mais automático e correto por meio do uso da metaprogramação em compilação.
+
+\section*{Publicações}
+
+Durante a realização dessa pesquisa foi submetido um artigo ao Simpósio Brasileiro de Linguagens de Programação (SBLP), que aconteceu em Fortaleza (Ceará, Brasil). Nesse artigo é mostrada a automatização do desenvolvimento do código-fonte. Ele não trata da verificação desse código-fonte. A automatização foi aplicada em programas distribuídos que foram desenvolvidos em Cyan usando Treplica.
+
+\begin{itemize}
+	\item UGLIARA. F. A.; VIEIRA G. M.; GUIMARÃES J. O.. ``Transparent Replication Using Metaprogramming in Cyan''. Simpósio Brasileiro de Linguagens de Programação (\textit{SBLP 2017}). Fortaleza, Ceará, Brasil. Setembro, 2017.
+\end{itemize}
+
+\section*{Endereços Eletrônicos}
+
+O código-fonte desenvolvido nessa pesquisa está disponível na internet em um repositório de projetos. Caso seja necessário reproduzir essa pesquisa, o ponto de partida é esse repositório. Para os entusiastas do \LaTeX, também estão disponíveis: o  código-fonte dessa dissertação, e o código-fonte da apresentação usada na defesa desse trabalho. Os arquivos README.md do repositório contêm detalhes de como executar esse projeto.
+
+\begin{itemize}
+	\item Dissertação, apresentação, compilador e códigos-fonte:\\ 
+    https://bitbucket.org/fellipe-ugliara/mestrado/src/master/
+\end{itemize}

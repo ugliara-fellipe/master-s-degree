@@ -1,0 +1,20 @@
+package cyan.lang
+
+interface IMap<K, V> extends Iterable<Tuple<key, K, value, V>>
+
+    func [] at: K key -> Nil|V
+    func [] at: K key put: V value -> Nil|V
+    func get: K key -> Nil|V
+    func add: K key, V value -> Nil|V
+    func containsKey: K key -> Boolean
+    func containsValue: V value -> Boolean
+    func isEmpty -> Boolean
+    func remove: K key -> Nil|V
+    func size -> Int
+    func asSet -> Set<Tuple<key, K, value, V>> 
+    func asArray -> Array<Tuple<key, K, value, V>>
+    func keySet -> Set<K>
+    func valueSet -> Set<V>
+    func clear    
+end
+

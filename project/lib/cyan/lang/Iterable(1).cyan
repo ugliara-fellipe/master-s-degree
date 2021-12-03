@@ -1,0 +1,6 @@
+package cyan.lang
+
+interface Iterable<T>
+    func iterator -> Iterator<T>
+    func foreach: Function<T, Nil>
+end

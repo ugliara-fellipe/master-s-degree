@@ -1,0 +1,24 @@
+package treplica
+
+@javacode<<<
+import java.io.Serializable;
+>>>
+
+@javaImplements(Serializable)
+abstract object Context
+  var Treplica treplica;
+
+  func init {
+    @javacode<<<
+    _treplica = null;
+    >>>
+  }
+
+  func setTreplica: (Treplica tr) {
+    treplica = tr;
+  }
+
+  func getTreplica -> Treplica {
+    return treplica;
+  }
+end

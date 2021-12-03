@@ -1,0 +1,6 @@
+package cyan.io
+
+interface IJsonStructure extends IJsonValue
+
+
+end

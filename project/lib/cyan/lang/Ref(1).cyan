@@ -1,0 +1,9 @@
+package cyan.lang
+
+object Ref<T>(T &_value)
+    func value -> T = _value;
+    func value: T _value {
+        self._value = _value
+    }
+end
+

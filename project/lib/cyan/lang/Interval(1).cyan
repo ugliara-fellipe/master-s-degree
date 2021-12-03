@@ -1,0 +1,207 @@
+package cyan.lang
+
+   // T should be one of these types. Otherwise a compiler error is issued
+@concept{*
+    T in [ Byte, Short, Int, Long, Char ], 
+        "The parameter 'T' to this generic prototype instantiation should be Byte, Short, Int, Long, or Char"
+*}
+
+object Interval<T> implements Iterable<T>
+
+
+    func init: (T start, T theend) {
+        self.start = start;
+        self.theend = theend
+    }
+    override
+    func == (Dyn other) -> Boolean {
+        /*
+        @javacode{*
+        if ( _other instanceof _Nil )
+            return new CyBoolean(false);
+        *}
+        var Any any;
+        @javacode{*
+        _any = (_Any ) _other;
+        *}
+        */
+        
+        type other
+            case Interval<T> otherInterval {
+                return start == otherInterval first &&
+                       theend == otherInterval last;
+            }
+        return false
+        
+        /*
+        if any isA: Interval<T> {
+            var Interval<T> otherInterval;
+            @javacode{*
+                _otherInterval = (Java_Current__Prototype___Name ) _any;
+            *}
+            //var otherInterval = Interval<T> cast: any;
+            return start == otherInterval first &&
+                   theend == otherInterval last;
+        }
+        else {
+            return false
+        }
+        */
+    }
+    
+    func asArray -> Array<T> {
+        let v = Array<T> new: size;
+        var T i = start;
+        while i <= theend {
+            v add: i;
+            ++i
+        }
+        return v
+    }
+    
+    func times: Function<Nil> b {
+        var T i = start;
+        while i <= theend {
+            b eval;
+            ++i
+        }
+    }
+    
+    func repeat: Function<T, Nil> b {
+    
+        var T i = start;
+        while i <= theend {
+            b eval: i;
+            ++i
+        }
+    }
+    
+
+    override
+    func foreach: Function<T, Nil> b {
+        var T i = start;
+        while i <= theend {
+            b eval: i;
+            ++i
+        }
+    }
+    
+    
+    func filter: Function<T, Boolean> f -> Array<T> {
+        let other = Array<T> new;
+        self foreach: { (: T elem :) 
+            if f eval: elem {
+                other add: elem
+            }
+        };
+        return other
+    }
+    
+    func filter: Function<T, Boolean> f foreach: Function<T, Nil> b {
+        self foreach: { (: T elem :) 
+            if f eval: elem {
+                b eval: elem
+            }
+        };
+    }
+    
+
+    func map: Function<T, T> f -> Array<T> {
+        let mapped = Array<T>();
+        for elem in self {
+            mapped add: (f eval: elem)
+        }
+        ^mapped
+    }
+
+    func |> Function<Interval<T>, Interval<T>> f -> Interval<T> {
+        return f eval: self
+    }
+
+
+    func + Iterable<T> other -> Iterable<T> {
+        let r = Set<T>();
+        self foreach: { (: T elem :) r add: elem };
+        other foreach: { (: T elem :) r add: elem };
+        return r;
+    }    
+
+       // Smalltalk-like injection
+    func inject: (T initialValue)
+        into: Function<T, T, T> b  
+        -> T {
+        var T i = start;
+        var T total = initialValue;
+        while i <= theend {
+            total = b eval: total, i;
+            ++i
+        };
+        return total
+    }
+
+       // injection method to be used with context object.
+       // the initial value is private to injectTo
+    func to: (T max)
+        do: (InjectObject<T> injectTo) 
+        -> T {
+        var T i = start;
+        while i <= theend {
+            injectTo eval: i;
+            ++i
+        };
+        return injectTo result
+    }
+
+    //func size -> Int { ^ 1 + (Int cast: (theend - start)) }
+    func size -> Int { ^ 1 + (theend - start) asInt }
+
+    func first -> T { ^start  }
+    func last  -> T { ^theend }
+
+
+    /*  Examples: 
+          1..10 apply: #print;
+          1..10 apply: #add:
+        this last applies add: to all elements, like inject
+    */
+    func apply: (String message) -> Dyn {
+        var Char ch = message[0];
+        if message[ (message size) - 1 ] == ':'  ||
+           !(ch == '_' || (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') )  {
+                       
+            var T partial = start;
+            var T i = start;
+            while i < theend {
+                i = i succ;
+                partial = partial `message: i;
+            }
+            return partial;
+        }
+        else {
+            self foreach: { (: T elem :)
+                elem `message
+            };
+            return Nil;
+        }
+    }
+
+    func .* (String message) {
+        self apply: message
+    }
+    
+    //  usage:  v .+ "+"  would sum all interval elements if
+    // the element type is Int
+    func .+ (String message) -> Any {
+        return self apply: message
+    }
+
+    override
+    func iterator -> Iterator<T> {
+        return IntervalIterator<T> new: self
+    }
+    
+
+    var T start, theend
+
+end
+

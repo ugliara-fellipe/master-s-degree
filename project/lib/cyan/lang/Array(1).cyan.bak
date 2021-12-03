@@ -1,0 +1,219 @@
+package cyan.lang
+
+@javacode{*
+import java.util.*;
+*}
+
+final object Array<T> implements Iterable<T>
+
+    @javacode[*{
+        public ArrayList<T> array;
+    }*]
+
+    fun init { 
+        @javacode[*{
+            array = new ArrayList<T>();
+        }*]
+    }
+
+    fun init: (Int intSizeArray) {
+        @javacode[*{
+            array = new ArrayList<T>(_intSizeArray.n);
+        }*]
+    }
+    
+    override
+    fun == (Dyn other) -> Boolean {
+        if other isA: Array<T> {
+            const another = Array<T> cast: other;
+            if size != another size { return false }
+            var Int i = 0;
+            for elem in another {
+                if self[i] != elem {
+                    return false
+                }
+                ++i
+            }
+            return true
+        }
+        else {
+            return false
+        }
+    }
+        
+    
+    fun add: (T elem) {
+        @javacode<<<
+            array.add(_elem);
+        >>>
+        return Nil
+    }
+    
+    /*
+    fun :: (T elem) {
+        add(elem);
+        return self
+    }    
+    */
+    
+    fun add: (Int i, T elem) {
+        @javacode<<<
+            array.add(_i.n, _elem);
+        >>>
+        return Nil
+    }
+    
+    fun clear {
+        @javacode<<<
+            array.clear();
+        >>>
+        return Nil
+    }
+    
+    fun isEmpty -> Boolean {
+         @javacode<<<
+             return new CyBoolean(array.isEmpty());
+         >>>
+    }
+    
+    fun remove: (Int i) {
+         @javacode<<<
+             try {
+                array.remove(_i.n);
+             } 
+             catch ( IndexOutOfBoundsException  e ) {
+                 throw new ExceptionContainer__( new _ExceptionIndexOutOfBounds(_i));
+             }
+         >>>
+        return Nil
+    }
+    
+    fun [] at: Int index -> T {
+        @javacode[*{
+             try {
+                return array.get(_index.n);
+             } 
+             catch ( IndexOutOfBoundsException  e ) {
+                 throw new ExceptionContainer__( new _ExceptionIndexOutOfBounds(_index));
+             }
+        }*]
+    }
+    fun [] at: Int index put: (T elem) {
+
+        @javacode[*{
+             try {
+                if ( _index.n + 1 > array.size() ) 
+                    array.ensureCapacity(_index.n+1);
+
+                 array.set(_index.n, _elem);
+             } 
+             catch ( IndexOutOfBoundsException  e ) {
+                 throw new ExceptionContainer__( new _ExceptionIndexOutOfBounds(_index));
+             }
+        }*]
+        return Nil
+    }
+    
+
+    
+    override
+    fun asString: (Int ident) -> String {
+        var String s = "";
+        for i in 1..ident  { s = s + " " }
+        s = s + "[ ";
+        var Int size2 = size;
+        for elem in self {
+            s = s + elem asString;
+            --size2;
+            if size2 > 0 { s = s + ", " }
+        }
+        s = s + " ] \n";
+        return s
+    }    
+    
+    fun slice: (Interval<Int> interval) -> Array<T> {
+        var newArray22 = Array<T> new: (interval size);
+        interval foreach: { (: Int i :) 
+            newArray22 add: (self at: i)
+        };
+        return newArray22;
+    }
+    
+      // concatenate other to the end of self
+    fun concat: Array<T> other {
+        other foreach: { (: T elem :) self add: elem };
+    }
+    
+    fun size -> Int {
+        @javacode[*{
+            return new CyInt(array.size());
+        }*]
+    }
+    
+    fun foreach: Function<T, Nil> b {
+        0..< size foreach: { (: Int i :) 
+            b eval: (self at: i)
+        }
+    }
+
+    fun iterator -> Iterator<T> {
+        return ArrayIterator<T> new: self
+    }
+
+    fun filter: Function<T, Boolean> f -> Array<T> {
+        const other = Array<T> new;
+        self foreach: { (: T elem :) 
+            if f eval: elem {
+                other add: elem
+            }
+        };
+        return other
+    }
+    
+    
+    /*  Examples: 
+          anArray apply: #print;
+          anArray apply: #add:
+        this last applies add: to all elements, like inject
+    */
+    fun apply: (String message) {
+
+        self foreach: { (: T elem :)
+            elem `message
+        };
+    }
+
+
+    fun apply: (String message) select: (String slot) -> Dyn {
+        var Dyn sum = self[0] `slot;
+        var Int i = 1;
+        while i < size {
+            const T elem = self[i];
+            sum = sum `message: (elem `slot);
+            ++i
+        }
+        return sum
+    }
+
+
+    /*
+        Example:
+             [ 1, 2, 3  ] .* #print; // print all array elements
+    */
+
+    fun .* (String message) {
+        self apply: message
+    }
+    
+    //  usage:  v .+ "+"  would sum all array elements if
+    // the element type is Int
+    fun .+ (String message) -> Any {
+        var T sum = self[0];
+        1 ..< size foreach: { 
+                (: Int i :)
+                 sum = sum `message: self[i]
+             }; 
+        return sum
+    }
+    
+end  

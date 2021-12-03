@@ -1,0 +1,43 @@
+package main
+
+import treplica
+
+object Calculator extends Context
+    var Int result 
+    var String action    
+
+    func init {   
+      result = 0;
+      action = "null";
+    }
+
+    @treplicaAction
+    func add: (String left, String right) {
+      action = "add";
+      result = (Cast<Int> asReceiver: (left asInt)) + (Cast<Int> asReceiver: (right asInt));
+    }
+
+    @treplicaAction
+    func sub: (String left, String right) {
+      action = "sub";
+      result = (Cast<Int> asReceiver: (left asInt)) - (Cast<Int> asReceiver: (right asInt));
+    }
+
+    @treplicaAction
+    func mult: (String left, String right) {
+      action = "mult";
+      result = (Cast<Int> asReceiver: (left asInt)) * (Cast<Int> asReceiver: (right asInt));
+    }
+
+    @treplicaAction
+    func div: (String left, String right) {
+      action = "div";
+      result = (Cast<Int> asReceiver: (left asInt)) / (Cast<Int> asReceiver: (right asInt));
+    }
+
+    @treplicaAction
+    func show -> String {
+      return "Action: " ++ action ++ " Result: " ++ result;
+    }
+end
+

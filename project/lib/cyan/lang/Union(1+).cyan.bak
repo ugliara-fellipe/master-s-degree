@@ -1,0 +1,70 @@
+package cyan.lang
+
+final object Union<Nil, Any>
+
+    @checkIfNil
+    fun ifNil: (Any other) -> Any {
+        if which == #f1 {
+            return other
+        }
+        else {
+            return elem
+        }
+    }
+    
+    fun == (Nil|Any other) -> Boolean {
+    
+        @javacode<*<
+           if ( _which.s.equals("f1") ) {
+               return _other == _Nil.prototype;
+           }
+           else {
+               _Any another = (_Any ) getUnionElem();
+               if ( another == null )
+                   return false;
+               else
+                   return another._equal_equal(other);
+           }
+        >*>
+        
+        // this method is not implemented in Cyan
+    }
+    
+    @checkUnionCase
+    fun unionCase: (Nil p1)   do: (Function<Nil> Afunction)
+        unionCase: (Any p2)   do: (Function<Nil> Bfunction) {
+           if which == #f1 {
+               Afunction eval
+           }
+           else { // should be #f2
+               Bfunction eval
+           }
+        }
+        
+    private fun f1:  { which = #f1;  }
+    private fun f2: (Any other) { which = #f2; elem = other }
+
+    // private methods go here
+       // the contained element
+    Any elem
+       // which element is kept by "elem"
+    CySymbol which
+    
+    @javacode<*<
+       @Override public boolean eq(Object other) {
+           if ( _which.s.equals("f1") ) {
+               return _other == _Nil.prototype;
+           }
+           else {
+               _Any another = (_Any ) getUnionElem();
+               if ( another == null )
+                   return false;
+               else
+                   return another._eq_dot(other);
+           }
+       }
+
+       @Override Object getUnionElem() { return _elem; }
+    >*>
+    
+end

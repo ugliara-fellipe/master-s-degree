@@ -1,0 +1,23 @@
+package math
+
+object Math
+
+    fun sin: Double x -> Double {
+        @javacode{*
+            return new CyDouble( java.lang.Math.sin(_x.n) );
+        *}
+    }
+    
+    fun cos: Double x -> Double {
+        @javacode{*
+            return new CyDouble( java.lang.Math.cos(_x.n) );
+        *}
+    }
+
+    fun sqrt: Double x -> Double { 
+        @javacode{*
+            return new CyFloat( java.lang.Math.sqrt(_x.n) );
+        *}
+    }
+
+end

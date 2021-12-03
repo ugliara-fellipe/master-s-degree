@@ -1,0 +1,5 @@
+package cyan.script
+
+object Script
+end
+

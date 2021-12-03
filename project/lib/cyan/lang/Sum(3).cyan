@@ -1,0 +1,11 @@
+package cyan.lang
+
+object Sum<T, FieldName, FieldType>(FieldType &sum) extends FunctionFieldPipeNil<T, Nil>
+
+     override
+     func eval: T elem {
+          sum = sum + (elem FieldName)
+     }
+     
+end
+

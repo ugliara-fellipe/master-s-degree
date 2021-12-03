@@ -1,0 +1,416 @@
+package main
+
+import treplica
+import cyan.math
+
+object Board extends Context
+  
+  var Map map
+  var Array< Player > players
+  var String currentPlayer
+  
+  func init: String currentPlayer {
+    self.currentPlayer = currentPlayer;
+    self.map = Map new;
+    self.players = Array< Player > new;
+  }
+  
+  func getPlayer: String id -> Player|Nil {
+    var Player|Nil result = Nil;
+    for pl in players {
+      if (pl getId) == id {
+        result = pl;
+      }
+    }
+    return result;
+  }
+  
+  @treplicaAction
+  func selectAction: String target {
+    var Player currentPly = Cast<Player> asReceiver: (self getPlayer: "P1");
+    if !(currentPly getIsTurn) {
+      currentPly = Cast<Player> asReceiver: (getPlayer: "P2");
+    }
+    Out println: "target: " ++ target;
+    if target == "M1" || target == "W1" || target == "W2" {
+      var String id = (currentPly getId) ++ target;
+      var Figure figure = Cast<Figure> asReceiver: (currentPly getFigure: id);
+      if (figure getLife) > 0 {
+        currentPly setSelected: id; 
+        currentPly setMessage: ("Selected " ++ target);
+      }
+      else {
+        currentPly setMessage: "Is already dead";
+      }
+    }
+    else {
+      currentPly setMessage: "Invalid Target";
+    }
+    self draw;
+  }
+
+  func checkEndTurn: Player currentPly {
+    if (currentPly getTurn) <= 0 {
+      currentPly setIsTurn: false;
+      if (currentPly getId) == "P2" {
+        var Player pl = Cast<Player> asReceiver: (getPlayer: "P1");
+        pl setTurn: Const TURN;
+        pl setIsTurn: true;
+      }
+      else {
+        var Player pl = Cast<Player> asReceiver: (getPlayer: "P2");
+        pl setTurn: Const TURN;
+        pl setIsTurn: true;
+      }
+    }
+  }  
+  
+  @treplicaAction
+  func attackAction: String target {
+    var Player currentPly = Cast<Player> asReceiver: (self getPlayer: "P1");
+    var Player oponentPlayer = Cast<Player> asReceiver: (self getPlayer: "P1");
+    if !(currentPly getIsTurn) {
+      currentPly = Cast<Player> asReceiver: (getPlayer: "P2");
+    }
+    else {
+      oponentPlayer = Cast<Player> asReceiver: (getPlayer: "P2");
+    }
+    if target == "M1" || target == "W1" || target == "W2" {
+      var String id = (currentPly getSelected);
+      var Figure figureAttack = Cast<Figure> asReceiver: (currentPly getFigure: id);
+      id = (oponentPlayer getId) ++ target;
+      var Figure figureTarget = Cast<Figure> asReceiver: (oponentPlayer getFigure: id);
+      if checkValidTarget: figureAttack, figureTarget, currentPly {
+        var Int damage = (figureAttack getDamage) + ( (Cast<Int> asReceiver: 2) * 6);//Math random) * 6);
+        figureTarget setLife: ((figureTarget getLife) - damage);
+        if (figureTarget getLife) <= 0 {
+          figureTarget setLife: 0;
+    
+          if ( Cast<Figure> asReceiver: (oponentPlayer getFigure: ((oponentPlayer getId) ++ "M1")) ) getLife > 0 {
+            oponentPlayer setSelected: ((oponentPlayer getId) ++ "M1");
+          }
+          else if ( Cast<Figure> asReceiver: (oponentPlayer getFigure: ((oponentPlayer getId) ++ "W1")) ) getLife > 0 {
+            oponentPlayer setSelected: ((oponentPlayer getId) ++ "W1");
+          }
+          else if ( Cast<Figure> asReceiver: (oponentPlayer getFigure: ((oponentPlayer getId) ++ "W2")) ) getLife > 0 {
+            oponentPlayer setSelected: ((oponentPlayer getId) ++ "W2");
+          }
+        }
+        currentPly setTurn: ((currentPly getTurn) - 1);
+        checkEndTurn: currentPly;
+        checkEndGame;
+        currentPly setMessage: "Attack " ++ target;
+      }
+    }
+    else {
+      currentPly setMessage: "Invalid Target";
+    }
+    self draw;
+  }
+  
+  func checkValidTarget: Figure figureAttack, Figure figureTarget, Player currentPly -> Boolean {
+    if (figureTarget getLife) > 0 {
+      var Double xdist = Native abs: ((figureAttack getRow) - (figureTarget getRow));
+      var Double ydist = Native abs: ((figureAttack getColumn) - (figureTarget getColumn));
+      var Double dist = Native sqrt: ((Native pow: xdist, 2) +  (Native pow: ydist, 2));
+      if dist <= (figureAttack getDistanceMax asDouble) {
+        return true;
+      }
+      else {
+        currentPly setMessage: "Distant Target";
+      }
+    }
+    else {
+      currentPly setMessage: "Dead Target";
+    }
+    return false;
+  }
+  
+  func checkEndGame {
+    var Player p1 = Cast<Player> asReceiver: (self getPlayer: "P1");
+    var Player p2 = Cast<Player> asReceiver: (self getPlayer: "P2");
+    
+    var Figure m1 = Cast<Figure> asReceiver: (p1 getFigure: "P1M1");
+    var Figure w1 = Cast<Figure> asReceiver: (p1 getFigure: "P1W1");
+    var Figure w2 = Cast<Figure> asReceiver: (p1 getFigure: "P1W2");
+    if (m1 getLife <= 0) && (w1 getLife <= 0) && (w2 getLife <= 0) {
+      p1 setStatus: Const LOSE;
+      p2 setStatus: Const WIN;
+      p1 setIsTurn: false;
+      p2 setIsTurn: false;
+    }  
+    
+    m1 = Cast<Figure> asReceiver: (p2 getFigure: "P2M1");
+    w1 = Cast<Figure> asReceiver: (p2 getFigure: "P2W1");
+    w2 = Cast<Figure> asReceiver: (p2 getFigure: "P2W2");
+    if (m1 getLife <= 0) && (w1 getLife <= 0) && (w2 getLife <= 0) {
+      p2 setStatus: Const LOSE;
+      p1 setStatus: Const WIN;
+      p2 setIsTurn: false;
+      p1 setIsTurn: false;
+    }
+  }
+  
+  @treplicaAction
+  func moveAction: String direction, String value {
+    //Out println: "d: " ++ direction ++ "v: " ++ value;
+    var Player currentPly = Cast<Player> asReceiver: (self getPlayer: "P1");
+    if !(currentPly getIsTurn) {
+      currentPly = Cast<Player> asReceiver: (getPlayer: "P2");
+    }
+    var String id = (currentPly getSelected);
+    var Figure figure = Cast<Figure> asReceiver: (currentPly getFigure: id);
+    if direction == "U" || direction == "D" || direction == "L" || direction == "R" {
+      if (Cast<Int> asReceiver: value asInt) <= figure getDistanceMax {
+        if checkValidMove: figure, direction, (Cast<Int> asReceiver: value asInt), currentPly {
+          map setFigure: figure getRow, figure getColumn, Nil;
+          if direction == "U" {
+            figure setPosition: ((figure getRow) - (Cast<Int> asReceiver: value asInt)), (figure getColumn);
+          }
+          else if direction == "D" {
+            figure setPosition: ((figure getRow) + (Cast<Int> asReceiver: value asInt)), (figure getColumn);
+          }
+          else if direction == "L" {
+            figure setPosition: (figure getRow), ((figure getColumn) - (Cast<Int> asReceiver: value asInt));
+          }
+          else if direction == "R" {
+            figure setPosition: (figure getRow), ((figure getColumn) + (Cast<Int> asReceiver: value asInt));        
+          }
+          map setFigure: figure getRow, figure getColumn, figure;
+          
+          currentPly setTurn: ((currentPly getTurn) - 1);
+          checkEndTurn: currentPly;
+          checkEndGame;
+          currentPly setMessage: "Move " ++ ((figure getId) substring: 2, ((figure getId) size) - 2);
+        }
+      }
+      else {
+        currentPly setMessage: "Invalid Move";
+      }
+    }
+    self draw;
+  }
+  
+  func checkValidMove: Figure figure, String direction, Int value, Player currentPly -> Boolean {
+    if direction == "U" {
+      if (figure getRow) - value >= 0 {
+        var Int i = figure getRow;
+        while i >= (figure getRow) - value {
+          if (map getTile: i, (figure getColumn)) getType == Const OBSTACLE {
+            currentPly setMessage: "Obstacle in path";
+            return false;
+          }
+          --i;
+        }
+        return true;
+      }
+    }
+    else if direction == "D" {
+      Out println: "fau:" ++ ((figure getRow) + value) asString;
+      if (figure getRow) + value < Const ROW_SIZE {
+        var Int i = figure getRow;
+        while i < (figure getRow) + value {
+          if (map getTile: i, (figure getColumn)) getType == Const OBSTACLE {
+            currentPly setMessage: "Obstacle in path";
+            return false;
+          }
+          ++i;
+        }
+        return true;
+      }
+    }
+    else if direction == "L" {
+      if (figure getColumn) - value >= 0 {
+        var Int i = figure getColumn;
+        while i >= (figure getColumn) - value {
+          if (map getTile: (figure getRow), i) getType == Const OBSTACLE {
+            currentPly setMessage: "Obstacle in path";
+            return false;
+          }
+          --i;
+        }
+        return true;
+      }
+    }
+    else if direction == "R" {
+      if (figure getColumn) + value < Const COLUMN_SIZE {
+        var Int i = figure getColumn;
+        while i < (figure getColumn) + value {
+          if (map getTile: (figure getRow), i) getType == Const OBSTACLE {
+            currentPly setMessage: "Obstacle in path";
+            return false;
+          }
+          ++i;
+        }
+        return true;
+      }
+    }
+    
+    currentPly setMessage: "Impossible Move";
+    return false;
+  }
+  
+  func messageAction: String message {
+    var Player pl = Cast<Player> asReceiver: (self getPlayer: "P" ++ currentPlayer);
+    pl setMessage: message;
+    self draw;
+  }
+  
+  func startBoard {
+    self.map build;
+    
+    var Player p1 = (Player new: "P1", self);
+    p1 build;
+    self.players add: p1;
+    
+    var Player p2 = (Player new: "P2", self);
+    p2 build;
+    self.players add: p2;
+    
+    p1 setIsTurn: true;
+    p2 setIsTurn: false;
+    
+    var Figure figure = Cast<Figure> asReceiver: (p1 getFigure: "P1M1");
+    self.map setFigure: 0, 0, figure;
+    figure setPosition: 0, 0;
+    
+    figure = Cast<Figure> asReceiver: (p1 getFigure: "P1W1");
+    self.map setFigure: 0, 1, figure;
+    figure setPosition: 0, 1;
+    
+    figure = Cast<Figure> asReceiver: (p1 getFigure: "P1W2");
+    self.map setFigure: 1, 0, figure;
+    figure setPosition: 1, 0;
+    
+    figure = Cast<Figure> asReceiver: (p2 getFigure: "P2M1");
+    self.map setFigure: (Const ROW_SIZE) - 1, (Const COLUMN_SIZE) - 1, figure;
+    figure setPosition: (Const ROW_SIZE) - 1, (Const COLUMN_SIZE) - 1; 
+    
+    figure = Cast<Figure> asReceiver: (p2 getFigure: "P2W1");
+    self.map setFigure: (Const ROW_SIZE) - 1, (Const COLUMN_SIZE) - 2, figure;
+    figure setPosition: (Const ROW_SIZE) - 1, (Const COLUMN_SIZE) - 2;
+    //self.map setFigure: 0, 2, figure;
+    //figure setPosition: 0, 2;
+    
+    figure = Cast<Figure> asReceiver: (p2 getFigure: "P2W2");
+    self.map setFigure: (Const ROW_SIZE) - 2, (Const COLUMN_SIZE) - 1, figure;
+    figure setPosition: (Const ROW_SIZE) - 2, (Const COLUMN_SIZE) - 1;  
+    
+    self draw;    
+  }
+  
+  @treplicaAction
+  func startAction {
+    self startBoard;
+  }
+  
+  func isEnd -> Boolean {
+    var Player p1 = Cast<Player> asReceiver: (self getPlayer: "P1");
+    var Player p2 = Cast<Player> asReceiver: (self getPlayer: "P2");
+    if !(p1 getIsTurn) && !(p2 getIsTurn) {
+      return true;
+    }
+    return false;
+  }
+  
+  func checkTurn -> Boolean {
+    var Player p = Cast<Player> asReceiver: (self getPlayer: "P" ++ currentPlayer);
+    var Boolean result = p getIsTurn;
+    if !result {
+      p setMessage: "Keep calm";
+      self draw;
+    }
+    return result;
+  }
+  
+  func draw {
+    InfoCanvas clean;
+    InfoCanvas title;
+    
+    MapCanvas clean;
+    MapCanvas title;
+    
+    self.map draw;
+    
+    var Player p1 = Cast<Player> asReceiver: (self getPlayer: "P1");
+    var Player p2 = Cast<Player> asReceiver: (self getPlayer: "P2");
+    var Figure figure = Cast<Figure> asReceiver: (p1 getFigure: "P1M1");
+    
+    InfoCanvas textLine: "";
+    var String who = "YOU";
+    if currentPlayer != "1" {
+      who = "OPONENT";
+    } 
+    InfoCanvas textLine: "  Player 1 - " ++ who;
+    InfoCanvas textLine: "";
+    InfoCanvas figureLife: "  Mage 1    ", figure;
+    figure = Cast<Figure> asReceiver: (p1 getFigure: "P1W1");
+    InfoCanvas figureLife: "  Warrior 1 ", figure;
+    figure = Cast<Figure> asReceiver: (p1 getFigure: "P1W2");
+    InfoCanvas figureLife: "  Warrior 2 ", figure;
+    InfoCanvas textLine: "";
+    
+    InfoCanvas textLine: "  Action Points ( " ++ ((p1 getTurn) asString) ++ " )";
+    InfoCanvas textLine: "  Selected { " ++ ((p1 getSelected) substring: 2, (p1 getSelected) size) ++ " }";
+    InfoCanvas textLine: "";
+    InfoCanvas divLine;
+    InfoCanvas textLine: "";
+    
+    who = "YOU";
+    if currentPlayer != "2" {
+      who = "OPONENT";
+    } 
+    InfoCanvas textLine: "  Player 2 - " ++ who;
+    InfoCanvas textLine: "";
+    figure = Cast<Figure> asReceiver: (p2 getFigure: "P2M1");
+    InfoCanvas figureLife: "  Mage 1    ", figure;
+    figure = Cast<Figure> asReceiver: (p2 getFigure: "P2W1");
+    InfoCanvas figureLife: "  Warrior 1 ", figure;
+    figure = Cast<Figure> asReceiver: (p2 getFigure: "P2W2");
+    InfoCanvas figureLife: "  Warrior 2 ", figure;
+    InfoCanvas textLine: "";
+    
+    InfoCanvas textLine: "  Action Points ( " ++ ((p2 getTurn) asString) ++ " )";
+    InfoCanvas textLine: "  Selected { " ++ ((p2 getSelected) substring: 2, (p2 getSelected) size) ++ " }";
+    InfoCanvas textLine: "";
+    InfoCanvas divLine;
+    InfoCanvas textLine: ""; 
+    
+    InfoCanvas textLine: "  Actions";
+    InfoCanvas textLine: ""; 
+    InfoCanvas textLine: "  Select - S (M1|W1|W2)"; 
+    InfoCanvas textLine: "  Attack - A (M1|W1|W2)"; 
+    InfoCanvas textLine: "  MoveTo - M (U|D|L|R) Dist";
+    InfoCanvas textLine: "";
+    InfoCanvas divLine;
+    InfoCanvas textLine: "";
+    
+    var Player cp = Cast<Player> asReceiver: (self getPlayer: "P" ++ currentPlayer);
+    if cp getStatus != Const GAME {
+      if cp getStatus == Const WIN {
+        InfoCanvas textLine: "  You Win ! Type START";
+      }
+      else {
+        InfoCanvas textLine: "  You Lose ! Type START";
+      }
+    }
+    else {
+      if cp getIsTurn {
+        InfoCanvas textLine: "  It is your turn ";
+      }
+      else {
+        InfoCanvas textLine: "  Wait for next turn";
+      } 
+    }
+    
+    InfoCanvas textLine: "  P1 >> " ++ (p1 getMessage);
+    InfoCanvas textLine: "  P2 >> " ++ (p2 getMessage); 
+    InfoCanvas textLine: "  ";
+   
+    MapCanvas footer;
+    MapCanvas flush;
+    InfoCanvas footer;
+    InfoCanvas flush;  
+  }
+
+end

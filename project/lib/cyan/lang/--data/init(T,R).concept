@@ -1,0 +1,4 @@
+// based on http://en.cppreference.com/w/cpp/concept
+T has [ 
+    func init: R
+], "T should have a constructor that takes an R object as parameter"

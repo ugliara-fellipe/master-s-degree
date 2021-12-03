@@ -1,0 +1,19 @@
+package cyan.lang
+
+object Print<T> extends Function<T, Nil>
+
+    func init { 
+    }
+    
+    func init: String after {
+        self.after = after;
+    }
+    
+    override
+    func eval: T t  {
+        t print;
+        after print;
+    }
+    String after = " "
+    
+end

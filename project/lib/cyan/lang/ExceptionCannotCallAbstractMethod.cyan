@@ -1,0 +1,9 @@
+package cyan.lang
+
+
+public final object ExceptionCannotCallAbstractMethod(String _message) extends CyException
+
+    func message -> String = _message;
+    
+end
+

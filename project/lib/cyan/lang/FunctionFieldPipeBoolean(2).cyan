@@ -1,0 +1,8 @@
+package cyan.lang
+
+abstract object FunctionFieldPipeBoolean<T, FieldName> extends Function<T, Boolean>
+    func | (Function<T, Boolean> other) -> Function<T, Boolean> = {
+            (: T leftSide -> Boolean :)
+           ^ (eval: leftSide) && (other eval: leftSide)
+        };
+end

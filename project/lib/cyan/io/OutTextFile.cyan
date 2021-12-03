@@ -1,0 +1,333 @@
+package cyan.io
+
+    
+@javacode{* import java.io.*; *} 
+
+
+@doc{*
+
+   All prototypes of package cyan.io have not been tested. Use them
+   at your own risk.
+
+*}
+
+object OutTextFile
+
+    func init: String filename {
+        self.filename = filename;
+        @javacode{*
+        try { 
+            File f = new File(_filename.s);
+            File parent = f.getParentFile();
+            if ( parent != null ) {
+                if ( !parent.exists() ) {
+                    if ( ! parent.mkdirs() ) {
+                        throw new IOException();
+                    }
+                }
+            }
+            file = new BufferedWriter(new FileWriter(f));
+        }
+        catch ( IOException e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionFileNotFound( _filename ) );            
+        }
+        *}
+    }
+
+    
+    overload
+    func write: Array<Char> charArray {
+        for elem in charArray {
+            @javacode{*
+            
+            try { 
+                file.write( (int ) _elem.c );
+            }
+            catch ( IOException e ) {
+                throw new ExceptionContainer__( 
+                    new _ExceptionIO( _filename ) );            
+            }
+            
+            *}
+        }
+        return Nil
+    }
+    
+    func write: String s {
+        @javacode{*
+        
+        try { 
+            file.write(_s.s, 0, _s.s.length() );
+        }
+        catch ( IOException e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( _filename ) );            
+        }
+        
+        *}
+        return Nil
+    }
+
+    func write: Array<String> strList {
+        for s in strList {
+            self write: s
+        }
+        return Nil
+    }
+    
+
+    
+    func write: Char ch {
+        @javacode{*
+        
+        try { 
+            file.write( (int ) _ch.c );
+        }
+        catch ( IOException e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( _filename ) );            
+        }
+        
+        *}
+        return Nil
+    }
+    
+    
+    
+    
+    overload
+    func write: Array<Char> charArray 
+         offset: Int offset 
+         size: Int size {
+        for i in offset ..< (offset + size) {
+            let elem = charArray[i];
+            @javacode{*
+
+            try {
+                file.write( (int ) _elem.c );
+            }
+            catch ( IOException e ) {
+                throw new ExceptionContainer__(
+                    new _ExceptionIO( _filename ) );
+            }
+
+            *}
+        }
+        return Nil
+    }
+    
+
+    func write: Array<String> strArray 
+         offset: Int offset 
+         size: Int size {
+        for i in offset ..< (offset + size) {
+            self write: strArray[i];
+        }
+        return Nil
+    }
+
+
+    @prototypeCallOnly
+    @checkCatchParameter
+    overload
+    func open: String filename 
+         write: String s
+         catch: Any catchObj  -> Boolean {
+
+        var Boolean ok = false;
+        var f = OutTextFile(filename);
+        
+        {
+            f write: s;
+            ok = true;
+        }
+        catch: { (: CyException e :)
+            catchObj ?eval: e
+        }
+        finally: {
+            f close
+        };
+        return ok
+        
+    }
+
+    @prototypeCallOnly
+    @checkCatchParameter
+    func open: String filename 
+         write: Array<String> strList
+         catch: Any catchObj  -> Boolean {
+         
+         let Dyn dynSelf = self;
+         
+         ^dynSelf open: filename 
+                  write: strList
+                  offset: 0
+                  size: strList size
+                  catch: catchObj;
+    }
+
+
+
+    @prototypeCallOnly
+    @checkCatchParameter
+    func open: String filename 
+         write: Array<String> strList
+         offset: Int offset 
+         size: Int size
+         catch: Any catchObj  -> Boolean {
+
+        var Boolean ok = false;
+        let f = OutTextFile(filename);
+        {
+            f write: strList offset: offset size: size;
+            ok = true;
+        }
+        catch: { (: CyException e :)
+            catchObj ?eval: e
+        }
+        finally: {
+            f close
+        };
+        
+        return ok
+    }
+
+
+    @prototypeCallOnly
+    @checkCatchParameter
+    func open: String filename 
+         maxNumLines: Int maxNumLines
+         write: String strLine
+         catch: Any catchObj  -> Boolean {
+         
+        var Boolean ok = false;
+
+        var OutTextFile|Nil outTextFileCopy = Nil;
+        {
+            var InTextFile|Nil inFileCopy = Nil;
+            var Array<String>|Nil strListCopy = Nil;
+            let String newLine = "\n";
+            
+            if CyFile(filename) exists {
+                {
+                    
+                    var inFile = InTextFile(filename);
+                    inFileCopy = inFile;
+                    let strList = inFile readLines;
+                    let newStrList = Array<String>();
+                    if strLine endsWith: newLine { 
+                        newStrList add: strLine;
+                    }
+                    else {
+                        newStrList add: strLine ++ newLine;
+                    }
+                    var Int num = maxNumLines - 1;
+                    if num > strList size { num = strList size }
+                    for i in 0..< num {
+                        if strList[i] endsWith: newLine  {
+                            newStrList add: strList[i];
+                        }
+                        else {
+                            newStrList add: strList[i] ++ newLine;
+                        }
+                    }
+                    inFile close;
+                    ok = true;
+                    strListCopy = newStrList;
+                }
+                finally: {
+                    if !ok {
+                        type inFileCopy 
+                            case InTextFile inFile {
+                                inFile close
+                            }
+                    }
+                };
+            }
+            else {
+                ok = true;
+                let strList = Array<String>();
+                if strLine endsWith: newLine { 
+                    strList add: strLine;
+                }
+                else {
+                    strList add: strLine ++ newLine;
+                }
+                strListCopy = strList
+                
+            }
+
+
+            if ok {
+                type strListCopy 
+                    case Array<String> strListCopyNonNil {
+                        ok = false;
+                        var fout = OutTextFile(filename);
+                        outTextFileCopy = fout;
+                        fout write: strListCopyNonNil;
+                        fout close;
+                        ok = true;
+                    }                
+            }
+            
+        }
+        catch: { (: CyException e :)
+            catchObj ?eval: e
+        }
+        finally: {
+        
+            if !ok {
+                type outTextFileCopy 
+                    case OutTextFile outFile {
+                        outFile close
+                    }
+            }        
+        
+        };
+        ^ok;
+    }
+
+   
+
+   
+    
+    func newLine {
+        @javacode{*
+        
+        try { 
+            file.newLine();
+        }
+        catch ( IOException e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( _filename ) );            
+        }
+        
+        *}
+        return Nil
+    
+    }
+    
+    func close {
+        @javacode{*
+        try { 
+            file.close();
+        }
+        catch ( IOException e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( _filename ) );            
+        }        
+        *}
+        return Nil
+    }
+    
+    String filename
+    
+    @javacode{*
+    BufferedWriter file;
+    
+    *}
+
+
+end
+

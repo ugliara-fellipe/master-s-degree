@@ -1,0 +1,5 @@
+// based on http://en.cppreference.com/w/cpp/concept
+implements Iterable<T>,
+T has [
+    func size -> Int
+]

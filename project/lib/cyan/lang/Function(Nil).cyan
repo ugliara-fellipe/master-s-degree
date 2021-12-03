@@ -1,0 +1,139 @@
+package cyan.lang
+
+abstract object Function<Nil>
+
+    abstract func eval
+    func loop {
+        while true {
+            self eval
+        }
+    }
+    func repeatUntil: (Function<Boolean> test) {
+        self eval;
+        if !(test eval)  {
+            self repeatUntil: test
+        }
+    }
+    
+    @createCatchMethodsForFunctionNil   
+    
+    /*
+    @checkCatchParameter
+    @grammarMethod{*
+        ( (catch: Any)+ (finally: Function<Nil>)? )
+    *}
+    func catchFinally: Tuple<Array<Any>, Union<some, Function<Nil>, none, Any>> t {
+    }
+    */
+    
+    func hideException {
+        {
+            self eval
+        } catch: { (: CyException e :) 
+        }
+    }
+    
+    func finally: Function<Nil> f {
+        @javacode{*
+            try {
+                this._eval();
+            }
+            finally {
+                _f._eval();
+            }
+        *}
+        ^Nil
+    }
+    
+    @javacode{*
+    
+       private static void catchException(Object[] catchList, ExceptionContainer__ t) {
+
+            _CyException anException = t.elem;
+      		boolean called = false;
+      		exit: 
+      		for ( Object f : catchList ) {
+      			Class<?> cClass = f.getClass();
+      
+      			while ( cClass != null ) {
+      
+                    Object result = null;
+      
+      				java.lang.reflect.Method []methodList = cClass.getDeclaredMethods();
+      				for ( java.lang.reflect.Method m : methodList ) {
+      					if ( m.getName().equals("_eval_1") && java.lang.reflect.Modifier.isPublic(m.getModifiers()) ) {
+      						Class<?> paramTypeList[] = m.getParameterTypes();
+      						if ( paramTypeList[0].isAssignableFrom(anException.getClass()) ) {
+      							try {
+      								m.setAccessible(true);
+      								result = m.invoke(f, anException);
+      							}
+      							catch (IllegalAccessException | IllegalArgumentException | java.lang.reflect.InvocationTargetException e) { 
+      								if ( e instanceof java.lang.reflect.InvocationTargetException ) {
+      									java.lang.reflect.InvocationTargetException it = (java.lang.reflect.InvocationTargetException ) e;
+      									Throwable anotherException = it.getTargetException();
+      									if ( anotherException instanceof cyanruntime.ExceptionContainer__ ) {
+      										throw ( cyanruntime.ExceptionContainer__ ) anotherException;
+      									}
+      								}
+      								System.out.println("Error in calling method '" + cClass.getName() + "::" + m.getName() + "' with parameter of types " 
+      									    +  " '" + f.getClass().getName() + "' and '" + t.getClass().getName() + "' in an exception. " + 
+      												"This error was caused by the use of type 'Dyn' or it is an internal compiler error (improbable)" );
+                                }
+                                if ( result != null ) {
+        							called = true;
+        							break exit;
+                                }
+      						}
+      						else if (  paramTypeList[0].getName().startsWith("cyan.lang._Union_LT_GP") ) {
+                                Class<?> classParamEval = paramTypeList[0];
+                                java.lang.reflect.Method []methodListClassParam = classParamEval.getDeclaredMethods();
+                  				for ( java.lang.reflect.Method aMethod : methodListClassParam ) {
+                  					if ( aMethod.getName().equals("assign") && java.lang.reflect.Modifier.isPublic(aMethod.getModifiers()) ) {
+                  						Object anUnion = null;
+              							try {
+              								aMethod.setAccessible(true);
+              								/*
+              								 * if the invoke succeeds, 'assign' was called without errors. This mean the exception is
+              								 * assignable to the Union that is parameter to the anonymous function passed as parameter to 
+              								 * selector catch:. Then this functions should be called passing this union as parameter.
+              								 */
+              								anUnion = aMethod.invoke(null, anException);
+              							}
+              							catch (IllegalAccessException | IllegalArgumentException | java.lang.reflect.InvocationTargetException e) { 
+                                        }
+              							if ( anUnion != null ) {
+                  							try {
+                  								m.setAccessible(true);
+                  								result = m.invoke(f, anUnion);
+                  							}
+                  							catch (IllegalAccessException | IllegalArgumentException | java.lang.reflect.InvocationTargetException e) { 
+                  								System.out.println("Error in calling method '" + cClass.getName() + "::" + m.getName() + "' with parameter of types " 
+                  									    +  " '" + f.getClass().getName() + "' and '" + t.getClass().getName() + "' in an exception. " + 
+                  												"This error was caused by the use of type 'Dyn' or it is an internal compiler error (improbable)" );
+                                            }
+                                            if ( result != null ) {
+                    							called = true;
+                    							break exit;
+                                            }
+              								
+              							}
+                  						
+                  					}
+                  				}
+                            }
+      					}
+      						
+      				}
+      				cClass = cClass.getSuperclass();
+      			}
+      		}
+      		if ( ! called ) 
+      			throw t;
+       }
+ 
+ 
+
+ 
+    *}
+end

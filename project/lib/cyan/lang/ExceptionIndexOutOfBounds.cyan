@@ -1,0 +1,9 @@
+package cyan.lang
+
+
+public final object ExceptionIndexOutOfBounds(Int _index) extends CyException
+
+    func index -> Int = _index;
+    
+end
+

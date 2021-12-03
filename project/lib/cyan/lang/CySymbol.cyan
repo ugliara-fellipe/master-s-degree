@@ -1,0 +1,35 @@
+package cyan.lang
+
+public final object CySymbol extends String
+
+	@javacode<<<
+        public _CySymbol(String s) { super(s); }
+	>>>
+
+    
+    override 
+    func eq:  (Dyn other) -> Boolean { 
+        @javacode<<< 
+            try {
+                return new CyBoolean(s.equals( (((CyString ) _other).s))) ; 
+            }
+            catch ( ClassCastException e ) {
+            }
+        >>> 
+        return false;
+	}
+
+    override
+    func != (Dyn other)  -> Boolean { 
+        @javacode<<< 
+            try {
+                return new CyBoolean(!s.equals( (((CyString ) _other).s))) ; 
+            }
+            catch ( ClassCastException e ) {
+            }
+        >>> 
+        return false;
+    }
+    
+end
+

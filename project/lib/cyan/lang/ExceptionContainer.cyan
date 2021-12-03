@@ -1,0 +1,12 @@
+package cyan.lang
+
+object ExceptionContainer extends CyException
+
+    func init: CyException _exception {
+        self._exception = _exception
+    }
+    func getException -> CyException = _exception;
+    
+    CyException _exception
+
+end

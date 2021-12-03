@@ -1,0 +1,38 @@
+package cyan.util.graph
+
+object Vertex
+
+    func init: String name { 
+        self._name = name;
+        self._edgeList = Set<Edge>();
+        self._visited = false;
+        self._weight = 0.0;
+        self._color = 0
+    }
+
+    
+
+    func init: String name, Array<Edge> edgeList { 
+        self._name = name;
+        self._edgeList = edgeList;
+        self._visited = false;
+        self._weight = 0;
+        self._color = 0
+    }
+    
+    func addEdge: Edge edge {
+        self._edgeList add: edge;
+        edge 
+    }
+    
+    
+    func edgeList -> Set<Edge> = _edgeList;
+    
+    var String _name
+    Set<Edge> _edgeList
+    var Boolean _visited
+    var Double _weight
+    var Int _color
+    
+end
+

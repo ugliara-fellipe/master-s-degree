@@ -1,0 +1,19 @@
+S has [ 
+    func equal: R -> Boolean
+], "S should define method 'func equal: R -> Boolean'",
+
+R has [ 
+    func equal: S -> Boolean
+], "R should define method 'func equal: S -> Boolean'",
+
+axiom comparableTest: R r, S s {%
+    if (r equal: s && !(s equal: r)) ||
+       (s equal: r && !(r equal: s)) {
+       ^"At least one method 'equal:' of R and/or S do not obey the axiom for camparison"
+    }
+    else {
+        ^Nil
+    }
+    
+%}
+

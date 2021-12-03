@@ -1,0 +1,1543 @@
+\documentclass[preprint,review]{elsarticle}
+
+\usepackage{booktabs} % For formal tables
+\usepackage{array}
+
+\newcommand{\srcstyle}[1]{\ttfamily\textbf{#1}\rmfamily}
+
+%\usepackage{listings}
+
+
+\usepackage{comment}
+%\usepackage{float}
+%\usepackage{setspace}
+%\usepackage{amssymb}
+%\usepackage{amsmath}
+%\usepackage{pgfgantt}
+%\usepackage[top=2.25cm, bottom=2.5cm, left=2.5cm, right=2.5cm]{geometry}
+
+\usepackage{xcolor}
+% Definindo novas cores
+%\definecolor{verde}{rgb}{0.25,0.5,0.35}
+%\definecolor{jpurple}{rgb}{0.5,0,0.35}
+%\definecolor{barblue}{RGB}{153,204,254}
+\definecolor{black}{RGB}{0,0,0}
+
+\newlength{\MaxSizeOfLineNumbers}%
+\settowidth{\MaxSizeOfLineNumbers}{99}% Adjust to maximum number of lines
+\addtolength{\MaxSizeOfLineNumbers}{0.7ex}%
+% Configurando layout para mostrar codigos Java
+
+
+
+\usepackage{listings}
+\lstset{
+    language=Java,
+    keywordstyle=\color{black},
+    stringstyle=\color{black},
+    commentstyle=\color{black},
+    morecomment=[s][\color{black}]{/**}{*/},
+    extendedchars=true,
+    showspaces=false,
+    showstringspaces=false,
+    numbers=left,
+    numberstyle=\tiny,
+    breaklines=true,
+    backgroundcolor=\color{white},
+    breakautoindent=true,
+    captionpos=b,
+    xleftmargin=\MaxSizeOfLineNumbers,
+    tabsize=2,
+    frame=single,
+    basicstyle=\fontsize{9}{9}\selectfont\ttfamily
+}
+
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{url}
+\usepackage{hyperref}
+\usepackage{pgf-umlsd}
+
+%\hyphenation{meta-pro-gram-ming}
+
+\newcommand{\titulo}{Transparent Replication Using Metaprogramming in Cyan}
+
+\hypersetup{
+     pdftitle={\titulo},
+     pdfauthor={Fellipe A. Ugliara, Gustavo M. D. Vieira, José de
+     O. Guimarães},
+     pdfdisplaydoctitle=true,
+     hidelinks
+}
+
+\journal{Science of Computer Programming}
+
+
+\begin{document}
+
+\begin{frontmatter}
+
+\title{\titulo}
+
+\author[dcomp]{Fellipe A. Ugliara}
+\ead{fellipe.a.u@gmail.com}
+\author[dcomp]{Gustavo M. D. Vieira\corref{cor1}}
+\ead{gdvieira@ufscar.br}
+\author[dcomp]{José de O. Guimarães}
+\ead{jose@ufscar.br}
+\cortext[cor1]{Corresponding author}
+
+\address[dcomp]{DComp -- CCGT -- UFSCar, Sorocaba, Brazil}
+
+\begin{abstract}
+  Replication can be used to increase the availability of a service by
+  creating  many  operational  copies  of its  data  called  replicas.
+  Active  replication  is  a  form  of  replication  that  has  strong
+  consistency semantics, easier to reason about and program.  However,
+  creating replicated services using  active replication still demands
+  from the programmer  the knowledge of subtleties  of the replication
+  mechanism.  In  this paper  we show how  to use  the metaprogramming
+  infrastructure  of  the  Cyan  language to  shield  the  application
+  programmer  from   these  details,   allowing  easier   creation  of
+  fault-tolerant replicated applications through simple annotations.
+\end{abstract}
+
+\begin{keyword}
+  replication \sep metaprogramming \sep code generation
+\end{keyword}
+
+\end{frontmatter}
+
+
+\section{Introduction}
+
+Distributed computing offers the  promise of increased reliability and
+performance  compared  to   traditional,  centralized  computing.   In
+particular, greater reliability can  be achieved by \emph{replicating}
+a service among many hosts to  ensure availability of a service even in
+the  presence  of faults.   Each  copy  of  the  service is  called  a
+\emph{replica} and there are many strategies to create such replicated
+service  that   usually  offer  a  balance   between  consistency  and
+scalability.  More scalable solutions  tend to favor weak consistency
+guarantees,   which  makes   reasoning  about   the  correctness   and
+programming  such systems  harder~\cite{vogels2009}.  Solutions  that
+favor consistency  bear more  similarities to centralized  systems and
+are         easier         to         reason         about         and
+program~\cite{schneider1990implementing}.  However, even in this case,
+the  programming   of  these   applications  still   pose  significant
+challenges~\cite{burrows2006chubby}.
+
+Among the strong consistency techniques for replication, the more used
+and        straightforward        is        called        \emph{active
+  replication}~\cite{schneider1990implementing}.     The   basis    of
+operation of this technique is to consider the system being replicated
+as a deterministic  state machine, that has its state  changed only by
+well  defined transitions.   Put in  a more  object-oriented way,  the
+system  is  modeled  by  a  set of  objects  that  only  change  state
+deterministically by calling a known  set of methods. To replicate the
+service,  we  have to  identify  each  transition before  it  happens,
+distribute the information about the occurrence of this transition and
+its data  to all replicas and  execute the transition in  all of them.
+Based on our  assumption that these transitions  are deterministic, if
+we are  able to distribute  these transition  among the replicas  in a
+strict  order,  the replicas  will  progress  along the  exactly  same
+states. These identical replicas will  be able to provide the required
+service in an indistinguishable way from each other.
+
+To make the  task of creating a replicated  service easier, frameworks
+such   as   Treplica~\cite{vieira08a,  vieira2010implementation}   and
+OpenReplica~\cite{altinbuken2012commodifying}  were   created.   These
+frameworks  help create  a replicated  system  by taking  care of  the
+distribution, ordering  and execution  of the transitions  selected by
+the application  programmer. The  integration of the  application into
+these  frameworks happens  differently  depending  on the  programming
+language  used. In  procedural  languages the  integration happens  by
+function  calls to  the  framework and  callbacks  from the  framework
+placed by the programmer. In object-oriented languages the integration
+happens by  creating the classes  of the program by  extending classes
+provided by the  framework.  Regardless of the  approach employed, the
+linking  of   application  and   framework  usually   requires  adding
+boilerplate code, intertwined with application code.
+
+Current replication frameworks, albeit useful, only help with the
+  communication and  ordering  of  transitions required  by
+active replication. Other requirements  of this replication technique,
+such as  a well defined set  of mutator methods and  the deterministic
+nature of  these methods, are non  trivial and completely left  to the
+application   programmer.   This   happens  because   the  traditional
+procedural and object-oriented languages in which these frameworks are
+built   are  not   suitable   to   enforce  these   non-func\-tion\-al
+requirements.
+
+Traditional languages lack mechanisms to  allow a program or framework
+to change and validate its own code. Languages
+that support metaprogramming~\cite{damavsevivcius2015taxonomy}
+allow programs to inspect and modify their own code. Metaprogramming
+has      been     used      to      translate     domain      specific
+languages~\cite{rentschler2014designing},       implement       design
+patterns~\cite{blewitt2005automatic}, perform  source code validations
+at compile  time~\cite{chlipala2013bedrock} and  to detect  defects in
+object-oriented programs~\cite{mekruksavanich2012analytical}.
+
+In this paper we show how to use the metaprogramming infrastructure of
+the Cyan  language~\cite{guimaraes2013cyan} to  transparently generate
+and  validate  integration code  that  uses  the Treplica  replication
+framework~\cite{vieira08a}.  We were able to use \emph{metaobjects} in
+a centralized  object-oriented program to  isolate the set  of mutator
+methods that change the state of a set of objects, and to generate the
+appropriate extended classes to integrate with Treplica.  The approach
+is    similar    in    essence    to    OpenMP~\cite{dagum1998openmp},
+OpenACC~\cite{wienke2012openacc} and  other systems that  use compiler
+directives   to   guide   the   automatic   generation   of   parallel
+code. However, our  approach is much more direct to  program and it is
+the  first  time metaobjects  are  used  to create  distributed  code.
+Moreover, we were able to validate  the generated code with respect to
+the  presence of  non-determinism in  transitions by  flagging mutator
+methods  that would  violate this  requirement.  Our  proposed set  of
+metaobjects  is   able  to  replace  non-deterministic   methods  with
+deterministic versions  and alert the  programmer if it still  finds a
+call to a non-deterministic method inside mutator methods.
+
+This  paper  is  structured  as  follows.   In  Section~\ref{cyan}  we
+describe  the   Cyan  language  and   give  an  introduction   to  its
+metaprogramming   features.    Section~\ref{treplica}  describes   the
+organization of the  Treplica framework.  In Section~\ref{metaobjects}
+we  describe the  proposed  metaobjects, how  to use  them  to turn  a
+centralized Cyan program into a replicated one and how they work.  The
+paper ends with a review  of related work in Section~\ref{related} and
+some concluding remarks in Section~\ref{conclusion}.
+
+
+\section{The Cyan Language}
+\label{cyan}
+
+\subsection{Language Overview}
+
+The language  used in  this paper is  Cyan~\cite{guimaraes2013cyan}, a
+prototype-based  object-oriented  language.   Unlike
+most  prototype-based languages,  Cyan  is statically  typed as  Omega
+\cite{DBLP:books/daglib/0072762}, the language  it was initially based
+on.  That makes  the  design of  Cyan  much closer  to  the design  of
+class-based  languages  such  as  Java \cite{Gosling:2014:JLS:2636997},
+C++ \cite{Stroustrup:2013:CPL:2543987}, or  C\# \cite{csharp:2017:Online} than  to  other
+prototype-based languages. Cyan programs  are compiled to produce Java
+code, to be run in a Java virtual machine.
+
+Prototypes  play  a  role  similar   to  classes.   Instead  of  using
+\srcstyle{class} to declare a  class, we use keyword \srcstyle{object}
+to  declare   a  prototype,  such  as   \srcstyle{Building}  shown  in
+Figure~\ref{fig:Building}.  In this example, keyword \srcstyle{var} is
+used to  declare a  field (instance  variable) and  \srcstyle{func} to
+declare a  method.  In a field  declaration, the type comes  before the
+field name  (\srcstyle{String} before \srcstyle{address} in  Line 17).
+\srcstyle{self} refers  to the object  that received the  message. The
+same  as  \srcstyle{self} in  Smalltalk \cite{Goldberg:1983:SLI:273} or  \srcstyle{this} in  other
+languages.
+
+\begin{figure}[htb]
+\centering
+\begin{lstlisting}[language=Java]
+package main
+object Building
+    func init: String name,
+               String address {
+         self.name = name;
+         self.address = address
+    }
+    func name:    String name
+         address: String address {
+         self.name = name;
+         self.address = address
+    }
+    func getName -> String { return name }
+    func getAddress -> String {
+        return address
+    }
+    var String name
+    var String address
+end
+\end{lstlisting}
+\caption{A prototype in Cyan}
+\label{fig:Building}
+\end{figure}
+
+Each  prototype  is  in  a  file with  its  own  name  (and  extension
+\srcstyle{.cyan}). The  package declaration  should appear  before the
+prototype  (Figure~\ref{fig:Building},  Line   1).   In  this  example
+prototype  \srcstyle{Building}  is  in package  \srcstyle{main}.   For
+conciseness, for  now on we  may show more  than one prototype  in the
+same figure and without the package declaration.
+
+A variable or field can  be declared using keywords \srcstyle{let} and
+\srcstyle{var}. \srcstyle{let} is used to declare a read-only field or local variable
+to which a value must be assigned.  For example, a variable
+of type \srcstyle{Building} can be initialized as:
+\begin{verbatim}
+     let b = Building new: "Dahlia", "21 Drive";
+\end{verbatim}
+The variable  name is \srcstyle{b} and  its type, \srcstyle{Building},
+is deduced from the expression.   Variables and fields that can change
+their  values  should  be  declared  with  keyword  \srcstyle{var}
+(Figure~\ref{fig:Building}, Line 17).  Fields that are not preceded by
+\srcstyle{var}    or   \srcstyle{let}    are   considered    read-only
+(\srcstyle{let}) fields.
+
+
+The syntax for message passing and method declaration is close to the Smalltalk syntax. Unary methods are those that do not take parameters, as \srcstyle{getName} of Line 13 of Figure~\ref{fig:Building}. Assuming \srcstyle{aBuilding}  is a variable
+of type \srcstyle{Building},
+\begin{verbatim}
+    aBuilding getName
+\end{verbatim}
+is  the  sending of  the  \emph{unary  message} \srcstyle{getName}  to
+object \srcstyle{aBuilding}.\footnote{More specifically, it  is the sending of
+  message   \srcstyle{getName}   to   the  object   referred   to   by
+  \srcstyle{aBuilding}.}     Messages    such     as    \srcstyle{-}    in
+\verb|-count| are also considered unary messages. In this example,
+message \srcstyle{-} is being sent to object \srcstyle{count}.
+
+A keyword method is declared with identifiers ending with \srcstyle{:} each of which taking zero or more parameters as method \srcstyle{name:address:} of Lines 8-12 of Figure~\ref{fig:Building}. This method has two keywords. A keyword method may be called at runtime by keyword message passing, as in this example:
+\begin{verbatim}
+    aBuilding name: "Dahlia" address: "21 Drive";
+\end{verbatim}
+In this code, message \srcstyle{name: "Dahlia" address: "21 Drive"} is sent to the object \srcstyle{aBuilding}. If   \srcstyle{aBuilding}   refers   to  a   \srcstyle{Building}   object   at
+runtime,\footnote{Even if  \srcstyle{aBuilding} has  type \srcstyle{Building},
+  the   object   referenced    by   it   may   be    a   subprototype   of
+  \srcstyle{Building}.} the  method called  would be that  declared in
+Line 8 of Figure~\ref{fig:Building}.
+
+The name of a method may be an operator such as \srcstyle{+} or \srcstyle{<}. Method \srcstyle{+} should take no parameters (for unary \srcstyle{+}) or two parameters (for binary \srcstyle{+}). These methods are called as usual:  \srcstyle{1 + 2} is the sending of message \srcstyle{+ 2} to object \srcstyle{1}.
+
+Cyan is a prototype-based language, which means each prototype such as \srcstyle{Building} is also an object and can receive messages:
+\begin{verbatim}
+   Building name: "Gerbera" address: "78 main"
+\end{verbatim}
+As a consequence, prototypes play a dual role: 1) they are types as are
+classes in Smalltalk, Java and C++, and 2) when used in expressions, they work like variables that refer to a fixed object of themselves.  \srcstyle{Building}, when used inside an expression, refers to an object of prototype \srcstyle{Building}.
+
+
+Object constructors are methods  with names \srcstyle{init} or \srcstyle{init:} (if there are parameters). They
+cannot  be called  directly  by sending  messages.
+For  each  method  \srcstyle{init}  or  \srcstyle{init:}  found  in  a
+prototype,   the   compiler   creates  a   method   \srcstyle{new}   or
+\srcstyle{new:} in the same prototype  with the same parameters as the
+original method.   This new method creates  an object and sends  to it
+the  corresponding \srcstyle{init}  or \srcstyle{init:}  message.  For
+example, the compiler adds a method \srcstyle{new: String name, String
+  address}       to       prototype       \srcstyle{Building}       of
+Figure~\ref{fig:Building}.\footnote{These  methods  are added  to  the
+  compiler internal  representation, the  original source code  is not
+  changed.} This method can only be called by sending a message to the
+prototype itself:
+\begin{verbatim}
+   Building new: "Dahlia", "21 Drive"
+\end{verbatim}
+This    \srcstyle{new:}   method    creates    a    new   object    of
+\srcstyle{Building} and calls  the appropriate \srcstyle{init:} method
+(Figure~\ref{fig:Building}, Line  3).  It  is a compile-time  error to
+send a message  \srcstyle{new} or \srcstyle{new:} to  anything that is
+not a prototype.
+
+Keyword \srcstyle{extends}  allows inheritance of a superprototype by a subprototype. Inherited methods can be overridden in the subprototype, as usual. Java-like interfaces can be defined by using keyword ``\srcstyle{interface}'' instead of ``\srcstyle{object}'' when defining a prototype.
+
+\begin{comment}
+An anonymous function is a nameless function that may access local variables and fields.
+\begin{verbatim}
+    { (: T1 p1, T2 p2, ..., Tn pn -> R :)
+         /* body */
+    }
+\end{verbatim}
+\srcstyle{Ti}  is   the  type  of  the   parameter  \srcstyle{pi}  and
+\srcstyle{R} is the optional return type. If omitted, it is deduced by
+the  compiler.   An anonymous  function,  called  just
+``function'', is  a literal  object.  From it  the compiler  creates a
+prototype with  an \srcstyle{eval:}  method that has  the body  of the
+function. This  method has  a parameter  for each  function parameter.
+For  each function  a  new  prototype is  created  and this  prototype
+inherits from the instantiated generic prototype:
+\begin{verbatim}
+    Function<T1, T2, ... Tn, R>
+\end{verbatim}
+\srcstyle{Function} is a  generic prototype with a  variable number of
+parameters. The last one is the return type of the anonymous function.
+
+The  value   returned  by   a  function   should  follow   the  symbol
+``\srcstyle{\^}'':
+\begin{verbatim}
+    let f = { (: Int a, Int b :)
+            ^a*b
+        };
+    let result = f eval: 3, 4;
+    result println;
+\end{verbatim}
+The declaration of \srcstyle{f} and  the assignment of the function to
+it  does not  execute  any code.  When  \srcstyle{f} receives  message
+\srcstyle{eval:}  at runtime  the  body of  the  function is  executed
+returning \srcstyle{12}. The type of \srcstyle{f} is:
+\begin{verbatim}
+    Function<Int, Int, Int>
+\end{verbatim}
+
+\end{comment}
+
+\subsection{The Cyan Metaobject Protocol}
+
+Metaprogramming is a paradigm that allows programs to manipulate other
+programs and  change themselves  in compilation  or in  execution time
+\cite{damavsevivcius2015taxonomy}.   Metaprogramming   has   a   broad
+meaning. In this  paper we will consider it is the
+transformations and  checks made  \textbf{at compile  time} by  a meta
+level on a  base program. The program that is  changed or checked is
+called  the {\it  base program} or simply {\it program}.  The code  that does  the changes  or
+checks is called  {\it the meta level} or simply {\it metaprogram}.  The metaprogram may  be just a
+set of classes  or functions and it acts as a  plugin to the
+compiler, potentially changing how it parses, does type checking, generates
+code, and so on.
+Since we will restrict ourselves to compile time, runtime metaprogramming will
+not be discussed in this paper.
+%So we do not need to discover the methods of an object or
+%replace a method for another at runtime.
+
+Xtend~\cite{rentschler2014designing},     Groovy    \cite{groovy2017},
+Nemerle   \cite{kamil2005}  and  Cyan~\cite{guimaraes2013cyan}   are
+examples of languages with compile-time metaprogramming features.  These languages
+allow to traverse  the abstract syntax tree (AST) to gather
+information. In Cyan, changes are introduced by supplying, to the compiler, source code as text. This is immensely easier than to supply an object of the AST that corresponds to a piece of source code.  Since  Cyan   is  used   in  this   paper,  we   will  describe
+metaprogramming in this language.
+
+
+
+A metaobject  protocol (MOP) is an interface between the  metaprogram, the program,
+and the compiler.  It defines functions or methods  of the metaprogram
+that should  be called when  a prototype is  inherited or a  method is
+overridden in a  subprototype, when a field is accessed,  a message is
+sent  or  when   an  annotation  is  found  in  the   program  by  the
+compiler. For  example, the MOP  defines that a  user-defined function
+should be  called whenever a  prototype is inherited. Cyan  supports a
+Metaobject Protocol, but not all languages that support metaprogramming do.
+
+In Cyan,
+the metaprogram consists of Java  classes because the compiler is made in this language. That makes it trivial for the metaprogram and the compiler to communicate.
+During the compilation of a program, an \textit{annotation} in the source code makes the link between the program (base level), the compiler, and the metaprogram. When the compiler finds an annotation in a certain compiler phase, it calls some specific methods of a metaobject tailored to that compiler phase. A metaobject is associated to each annotation and its Java class is part of the metaprogram. Before defining the MOP, let us see some examples of use of annotations and their associated metaobjects.
+
+
+\begin{figure}[h]
+\centering
+\begin{lstlisting}[language=Java]
+object Person
+    @init(name, age)
+    func getName -> String { return name }
+    func getAge -> Int { return age }
+    String name
+    Int age
+end
+
+object Program
+    func run {
+        let Person meg =
+            Person new: "Meg", 3;
+        let Person doki =
+            Person new: "Doki", 5;
+        meg getName println;
+        doki getAge println;
+    }
+
+end
+\end{lstlisting}
+\caption{Metaobjects and anonymous functions in Cyan}
+\label{fig:ObservableExampleCyan}
+\end{figure}
+
+
+In  Line 2  of  Figure~\ref{fig:ObservableExampleCyan} we  can find  a
+\textit{metaobject   annotation}    or   simply   \textit{annotation}:
+\srcstyle{@init(name, age)}. For each annotation, the compiler creates
+a \textit{metaobject}  of a  \textit{metaobject class}. This  class is
+made  in  Java, as  the  compiler  is, and  is  associated  to a  Cyan
+package.  When  the  package  is  imported  by  a  Cyan  program  the
+metaobject class is imported too, and the annotations whose name are
+equal to  the string  returned by  method \srcstyle{getName()}  of the
+metaobject class can be used in  the source code. To simplify, we will
+say  ``metaobject \srcstyle{init}''  and ``class  of \srcstyle{init}''
+for the  metaobject associated  to annotation \srcstyle{init}  and the
+metaobject class of metaobject \srcstyle{init}.
+
+Package \srcstyle{cyan.lang}  is imported automatically by  every Cyan
+program and this package keeps the metaobject class of \srcstyle{init}. Thus, this annotation can be used in any Cyan source code without explicitly importing a package, as is done in
+the example of Figure~\ref{fig:ObservableExampleCyan}.
+
+
+
+
+The  Cyan compiler  has several  phases. For  example, in  Phase 2  it
+discovers   the  types   of   instance  variables   (fields)  of   all
+prototypes. After this phase completes the compiler calls a specific method of
+all metaobjects used in the code.  In particular, it calls a method of
+metaobject                      \srcstyle{init}                     of
+Figure~\ref{fig:ObservableExampleCyan}. This method  returns an object
+with the text to be added after  the metaobject annotation --- it is a
+Java \srcstyle{StringBuilder} object. The  text returned by the method
+of metaobject \srcstyle{init} of this example is:
+\begin{lstlisting}
+    func init: String name,
+               Int age {
+        self.name = name;
+        self.age = age;
+    }
+\end{lstlisting}
+This code  is added after the  annotation in an  internal (to  the compiler)
+representation of  the source code of  \srcstyle{Person} (the original
+file   with  prototype   \srcstyle{Person}  is   not  changed).
+Figure~\ref{fig:ObservableCompilerCyan} shows the resulting
+\srcstyle{Person} prototype.  As a consequence,  method \srcstyle{run}
+of \srcstyle{Program}  can create an object  of \srcstyle{Person} using
+the constructor added to this prototype.
+Note that the Java class that represents the metaobject \srcstyle{init} knows the types of instance variables \srcstyle{name} and \srcstyle{age}. These types are necessary to generate the constructor.
+
+
+
+\begin{figure}[h]
+\centering
+\begin{lstlisting}[language=Java]
+object Person
+    @init(name, age)#ati
+    func init: String name,
+               Int age {
+        self.name = name;
+        self.age = age;
+    }
+    func getName -> String { return name }
+    func getAge -> Int { return age }
+    String name
+    Int age
+end
+\end{lstlisting}
+\caption{\textit{Person} generated during compilation}
+\label{fig:ObservableCompilerCyan}
+\end{figure}
+
+
+In the remaining of this section we will give a simplified view of the MOP of the Cyan
+language. A Java  class has to obey
+some prerequisites to be a metaobject class. It has to be compiled with
+the Java compiler and inherit
+from  a  class called  \srcstyle{CyanMetaobjectWithAt}.\footnote{Other
+  kinds of  metaobjects, not presented  in this paper,  should inherit
+  from  other classes.}   Each of such classes  is  called a  ``metaobject
+class'' and  it has to
+override some methods inherited from  \srcstyle{CyanMetaobjectWithAt}
+and  implement some  interfaces defined  by the  MOP.  Both  the class
+\srcstyle{CyanMetaobjectWithAt} and these interfaces belong to the package
+\srcstyle{meta} of the compiler.
+
+\begin{comment}
+CyanMetaobjectWithAt
+IActionProgramUnit_ati (rename, create new method)
+\srcstyle{IActionNewPrototypes\_ati} (create new prototype)
+attache to method, prototype, etc
+
+\end{comment}
+
+It is important  to note that the metaobject class  has to be compiled
+as a  class of the  Cyan compiler, but after  compiled it can  be used
+with  a Cyan  compiler that  does not  known the  source code  of this
+metaobject  class.  When  the  package  of  the  metaobject  class  is
+imported, the Java class is dynamically loaded by the compiler and the
+metaobject  becomes available  in the  source code  that imported  the
+package.
+
+The Cyan compiler has ten compilation phases. The first one is parsing
+and it builds the Abstract Syntax Tree (AST) of the whole program.
+Phase 2 is ``type interfaces'', which associates types to prototype fields, method parameters and return values, to anything that is outside a method body (its statements) and has a type. Before that, the AST keeps only a string with the type name. After parsing the compiler knows all the program prototypes.
+
+In Phase 3 of the compilation, called ``ati actions'', the compiler calls some methods of all metaobjects that implement interfaces \srcstyle{IActionProgramUnit\_ati} and
+\srcstyle{IActionNewPrototypes\_ati}. These interfaces are in the Cyan compiler. \srcstyle{IActionProgramUnit\_ati} declares methods
+\begin{lstlisting}[language=Java]
+    ati_codeToAdd
+    ati_codeToAddToPrototypes
+    ati_renameMethod
+\end{lstlisting}
+among others. The first one can return code that is added after the metaobject annotation and do checks in the source code. The second method returns code to be added to the prototype in which the annotation is.\footnote{It can also add code to other prototypes of the same package, but this needs a special compiler option and prevents separate compilation.}
+The added code is in string format, a Java \srcstyle{String} or \srcstyle{StringBuffer} object. Since it is added to a prototype, it should consist of field and method declarations.
+Method \srcstyle{ati\_renameMethod} allows the  metaobject to rename a
+method of the prototype in which the annotation is.
+In Phase 3 only metaobjects associated to annotations that are outside
+a   method  body   are  allowed   to  generated   code  using   method
+\srcstyle{ati\_codeToAdd}. Otherwise, statements  or expressions could
+be added to a method in this phase and this  is not allowed.
+
+All  the  methods  of  metaobject interfaces  linked  to  phase  ``ati
+actions''    receive    as    parameter     an    object    of    type
+\srcstyle{ICompiler\_ati}. Through this object  the metaobject can get
+information available  in this  phase, as  the current  prototype, the
+package  name,  the  fields  and  methods of  the  prototype,  and  so
+on. Information  can also be  obtained from methods of  the metaobject
+class itself, which should be, necessarily, \srcstyle{CyanMetaobjectWithAt}.
+
+Metaobject \srcstyle{init} of Figure~\ref{fig:ObservableExampleCyan} generates the \srcstyle{init:} shown in Figure~\ref{fig:ObservableCompilerCyan} in Phase 3. Note that the annotation is not removed, it can act in the following phases. String \verb|#ati| is appended to the annotation to label it as used in this phase. Through a method inherited from class \srcstyle{CyanMetaobjectWithAt}, the metaobject gets the object that represents the annotation and retrieves the annotation parameters. It then uses methods of the object of \srcstyle{ICompiler\_ati} to check if every parameter is a field of the current prototype. This object is passed as parameter to all methods of all interfaces linked to Phase 3.
+%prevent it from being used again latter in the
+
+Fields and methods  can be added to prototypes in  the ``ati actions''
+phase, changing the  text of the source code in  memory (the files are
+not touched). Because  code could have been added,  the program should
+be parsed again, which is made in Phase 4. This next phase is ``type interfaces'' again, the same as Phase 2. Phase 6 is the semantic analysis of methods, their statements and expressions are checked. The name of this phase is ``calculate internal types''. Now types are assigned to every element that is associated to a type. Methods of the following compiler Java interfaces are called in Phase 6.
+\begin{lstlisting}[language=Java]
+    IAction_dsa
+    IActionVariableDeclaration_dsa
+\end{lstlisting}
+Interface \srcstyle{IAction\_dsa}  declares a  method for  adding code
+after   the   annotation  and   performing   checks   in  the   source
+code. Annotations can be attached  to prototypes, methods, fields, and
+local  variable   declarations.  The  metaobject  associated   to  the
+annotation can get  the AST of the element to  which the annotation is
+attached. For example, an annotation \srcstyle{readOnly} attached to a
+method could check if any of  the prototype fields receives a value in
+an assignment inside the method, issuing an error if any does.
+
+The Cyan  compiler ensures that  metaobjects implementing the  Phase 6
+interface   \srcstyle{IActionVariableDeclaration\_dsa}  can   only  be
+associated to annotations that are attached to
+a local  variable declaration.   Through this interface,  a metaobject
+can check  the annotated declaration  and add  code after it.   It has
+access  to  the  AST  of  the local  variable  and,  if  present,  the
+expression assigned to it in the declaration.
+
+Phase 6  together with Phase 5  comprise the semantic analysis  of the
+program. Since statements  and expressions can be added  to the source
+code, in memory only, the code has  to be compiled again. Phases 7, 8,
+and 9 of the  compilation are equal to phases 4, 5, and  6 but with an
+important difference:  the code  cannot be changed  anymore.  However,
+the  resulting  source  code  can still  be  checked  by  metaobjects.
+Interfaces            \srcstyle{ICheckDeclaration\_ati3}           and
+\srcstyle{ICheckDeclaration\_dsa2} should be implemented by metaobject
+classes  that need  to  do checks  in  Phases 8  (ati  actions) and  9
+(calculate  internal  types).   The associated  annotation  should  be
+attached  to a  declaration such  as a  method or  prototype. Finally,
+Phase 10 is code generation to Java.
+
+
+
+
+
+
+
+
+
+\section{Treplica}
+\label{treplica}
+
+Treplica~\cite{vieira08a} is a framework written in Java that provides
+an  active replication  structure  for the  development of  replicated
+distributed applications. In  this section we briefly  describe how to
+program  this  framework through  a  binding  developed for  the  Cyan
+language\footnote{More information  in the Java interface  of Treplica
+  can be found  in~\cite{vieira2010implementation}.}  with the purpose
+of  characterizing  the  programming  effort  required  to  program  a
+replicated application using the framework.
+
+Active replication  ensures that many  copies of a  single application
+known as  \emph{replicas} keep their  state up to date  and consistent
+even as  changes are made  as part  of the application  operation.  It
+works by assuming  the application behaves like  a deterministic state
+machine,  that only  changes its  internal state  by deterministically
+executing transitions.  If one is able to execute the same transitions
+in the  same order  in all replicas,  they will end  up with  the same
+resulting state due to the deterministic nature of the transitions. As
+a consequence, an active replication framework must provide a reliable
+way of disseminating  transitions in a ordered way  among all replicas
+and  it should  provide a  programming interface  that allows  regular
+applications to behave like deterministic  state machines even if they
+are not programmed as such.
+
+Treplica solves the problem of  disseminating transitions by using the
+Paxos algorithm  to ensure the  transitions reach all replicas  in the
+same order,  even in the presence  of failures~\cite{lamport2006fast}.
+Treplica  solves the  programming  interface problem  by providing  an
+object-oriented abstraction that  defines the very simple  notion of a
+shared state  and well defined  changes to this state.   The resulting
+programming  interface  is  as   close  as  possible  to  conventional
+centralized  applications~\cite{vieira08a},   making  the  replication
+\emph{mechanism} transparent to the developers.
+
+The shared state of an application is defined by its \emph{context}, a
+single  object that  stores the  application  data in  its fields  and
+references.  In the  Treplica framework this object  should extend the
+\srcstyle{Context}  prototype  and   be  serializable.   Serialization
+allows  an  object to  be  transformed  to text,  transmitted  between
+different  hosts and  transformed  back  to a  clone  of the  original
+object.     Figure~\ref{fig:TreplicaDados}    shows   the    prototype
+\srcstyle{Info}, an example of  an application context. This prototype
+contains  two variables:  an \srcstyle{Int}  and a  \srcstyle{String},
+representing the state of this application.
+
+\begin{figure}[h]
+\centering
+\begin{lstlisting}[language=Java]
+object Info extends Context {
+    var String text
+    var Int number
+
+    func setNumber: Int number {
+        self.number = number;
+    }
+
+    func setText: String text {
+        self.text = text;
+    }
+
+    func getText -> String {
+        return self.text;
+    }
+}
+\end{lstlisting}
+\caption{Prototype to be replicated}
+\label{fig:TreplicaDados}
+\end{figure}
+
+The prototype  \srcstyle{Info} has two \srcstyle{set}  methods used to
+assign values to  its private variables.  More  importantly, these two
+methods  allow changing  the state  of the  application context.   The
+Treplica framework  considers a message  sent to an object  that calls
+one of  these mutator methods  to be  equivalent to a  transition that
+changes the context  state in a deterministic way.  The framework then
+defines  a   way  to  capture   and  represent  this  message   as  an
+\emph{action}.
+
+The prototypes that extend prototype \srcstyle{Action} implement these
+actions.  They contain  as fields the parameters of the  message to be
+sent and are  serializable, allowing the record of this  message to be
+sent  to   other  hosts.   Also,   they  must  implement   the  method
+\srcstyle{executeOn:} that defines  the keywords of the  message to be
+sent by encoding an actual message  send operation using the fields as
+parameters.    The   target   object    of   the   message   sent   by
+\srcstyle{executeOn:}  is  defined by  a  parameter  received by  this
+method.     Figure~\ref{fig:TreplicaAction}   shows    the   prototype
+\srcstyle{SetTextAction},  which implements  a  transition that  sends
+message \srcstyle{setText:} to an \srcstyle{Info} object.
+
+\begin{figure}[h]
+\centering
+\begin{lstlisting}[language=Java]
+object SetTextAction extends Action {
+    var String updateText
+
+    func init: String text {
+        self.updateText = text;
+    }
+
+    func executeOn: Context context {
+        type context
+            case Info info {
+                info setText: self.updateText;
+            }
+    }
+}
+\end{lstlisting}
+\caption{Prototype that implements a transition}
+\label{fig:TreplicaAction}
+\end{figure}
+
+The actual firing of a transition is implemented by Treplica. When the
+application  wants to  change  its state,  it  creates an  appropriate
+action  object and  passes  it to  Treplica  in a  \srcstyle{execute:}
+message  sent  to  an  object of  prototype  \srcstyle{Treplica}.   The
+framework then  sends a  copy of  this object  to the  other replicas,
+properly    ordered,   and    all   of    them   send    the   message
+\srcstyle{executeOn:} to the received object,  passing a local copy of
+the context as  the parameter.  Therefore, all the copies  will end up
+with contexts with the same values.
+
+For this to  work, no changes to the context  can happen without being
+represented  as  actions  and  the  actions  passed  to  Treplica  for
+execution.   The  application  places  its state  under  care  of  the
+framework    during   the    application   initialization,    when   a
+\srcstyle{Treplica} object  is instantiated.  In Cyan  that is usually
+done  in  a  method  called  \srcstyle{run:}  in  a  prototype  called
+\srcstyle{Program}.    Figure~\ref{fig:TreplicaMain}   shows   how   a
+Treplica object is  declared and initialized in each  replica. This is
+also   an    example   of   how    an   object   of    the   prototype
+\srcstyle{SetTextAction}  is  passed  as  an argument  to  the  method
+\srcstyle{execute:} of the Treplica object.
+
+\begin{figure}[h]
+\centering
+\begin{lstlisting}[language=Java]
+object Program {
+    func run: Array<String> args {
+        let info = Info new;
+        let treplica = Treplica new;
+        treplica runMachine: info
+                 numberProcess: 3
+                 rtt: 200
+                 path: "/var/tmp/magic" ++ args[1];
+
+        let action = SetTextAction new: "text";
+        treplica execute: action;
+    }
+}
+\end{lstlisting}
+\caption{Treplica configuration and execution}
+\label{fig:TreplicaMain}
+\end{figure}
+
+The sequence diagram of Figure~\ref{fig:trepexecexamplecyan} shows the
+execution flow of the  example in Figure~\ref{fig:TreplicaMain}.  Both
+Replicas  A and  B start  execution  in the  \srcstyle{run} method  of
+prototype   \srcstyle{Program}.   The   context  of   the  application
+(\srcstyle{Info})  and the  Treplica object  (\srcstyle{Treplica}) are
+initialized during the  execution of this method.  Replica  A wants to
+change  the replicated  state,  so it  creates  an appropriate  action
+object  (\srcstyle{SetTextAction})  and sends  an  \srcstyle{execute:}
+message to Treplica with the  object as parameter. Treplica will order
+and distribute the action object to  both replicas and it will execute
+the action on both, independently, by sending an
+\srcstyle{executeOn:} message to the local action object.
+
+\begin{figure}[h]
+  \centering
+  \tikzset{every picture/.append style={transform shape,scale=0.75}}
+  \begin{sequencediagram}[font=\fontsize{0.32cm}{0.35cm}\selectfont\ttfamily]
+    \draw (5.6,-1)  node[right] {\small Replica A};
+    \draw (8.3,-1)  node[right] {\small Replica B};
+    \draw (8,0) -- (8,-4.8);
+    \draw (8,-5.8) -- (8,-10.3);
+    % \draw (8,-5.8) -- (8,-8.8);
+    % \draw (8,-9.5) -- (8,-10.3);
+    \newthread{InstAMain}{Program}
+    \newinst{InstAInfo}{Info}
+    \newinst{InstAUpdate}{SetTextAction}
+    \newinst{InstAState}{Treplica}
+
+    \newinst[0.6]{InstBState}{Treplica}
+    \newinst{InstBUpdate}{SetTextAction}
+    \newinst{InstBInfo}{Info}
+    \newthread{InstBMain}{Program}
+
+    \begin{call}{InstAMain}{Info new}{InstAInfo}{info} \end{call}
+    \begin{call}{InstAMain}{Treplica new}{InstAState}{treplica} \end{call}
+    \begin{call}{InstAMain}{runMachine:}{InstAState}{} \end{call}
+
+    \prelevel \prelevel \prelevel \prelevel \prelevel \prelevel
+
+    \begin{call}{InstBMain}{Info new}{InstBInfo}{info} \end{call}
+    \begin{call}{InstBMain}{Treplica new}{InstBState}{treplica} \end{call}
+    \begin{call}{InstBMain}{runMachine:}{InstBState}{} \end{call}
+
+    \begin{call}{InstAMain}{execute:}{InstAState}{}
+      \postlevel
+      \begin{call}{InstAState}{executeOn:}{InstAUpdate}{}
+        \begin{call}{InstAUpdate}{setText:}{InstAInfo}{} \end{call}
+      \end{call}
+
+      \prelevel \prelevel \prelevel
+      \prelevel \prelevel
+
+      \begin{messcall}{InstAState}{<Paxos>}{InstBState}{}
+        \postlevel
+        \begin{call}{InstBState}{executeOn:}{InstBUpdate}{}
+          \begin{call}{InstBUpdate}{setText:}{InstBInfo}{} \end{call}
+        \end{call}
+      \end{messcall}
+    \end{call}
+  \end{sequencediagram}
+  \caption{Treplica execution sequence diagram}
+  \label{fig:trepexecexamplecyan}
+\end{figure}
+
+The  way  Treplica   encodes  message  passing  is   very  simple  and
+straightforward, but it requires  the application programmer to create
+much  boilerplate  code in  the  form  of action  objects.   Moreover,
+isolating message passing  isn't enough to achieve  replication, it is
+necessary  that the  method activated  by the  message doesn't  create
+external effects  besides changing  the context  state and  that these
+changes are deterministic. It is  the responsibility of the programmer
+to be aware of these requirements and avoid breaking them.
+
+For example,  in Figure~\ref{cod:PropostaConsistencia} we  introduce a
+small  change to  the  \srcstyle{setText:}  method of  \srcstyle{Info}
+prototype to  make it non-deterministic.   The problem brought  by the
+change is that every time the \srcstyle{setText:} method is called the
+value  set  will   be  different,  even  if  the   starting  state  of
+\srcstyle{Info}  and the  parameters  of  \srcstyle{setText:} are  the
+same.   This will  make  the replicas  diverge,  as the  deterministic
+behavior of the transition will be violated.
+
+\begin{figure}[h]
+\centering
+\begin{lstlisting}[language=Java]
+...
+object Info extends Context {
+  ...
+  func setText: String text {
+    var date = System currentTime asString;
+    self.text = text ++ date;
+  }
+  ...
+}
+\end{lstlisting}
+\caption{Non-deterministic \srcstyle{setText:} method}
+\label{cod:PropostaConsistencia}
+\end{figure}
+
+
+\section{Metaobjects for Replication}
+\label{metaobjects}
+
+\subsection{Overview and Use}
+
+The creation of  a replicated application using  Treplica requires the
+construction of  a prototype representing the  application context and
+as many actions as messages this  context can receive. For each action
+it is necessary to define a  new prototype with the correct number and
+type of  fields, besides  sending the  correct message  to application
+context when asked by Treplica. We have shown in the last section this
+task isn't hard, but it  requires the tedious and error-prone creation
+of a lot of boilerplate code. Now we are going to show how programming
+of  replicated  application can  be  simplified  by  the use  of  Cyan
+metaobjects \srcstyle{treplicaAction}  and \srcstyle{treplicaInit}. We
+first describe how  to use the metaobjects and in  the next section we
+describe how the metaobjects are created and how they work.
+
+A good  programming practice when  using Treplica is to  create action
+prototypes that do not have  application functional behavior and limit
+themselves  to send  a  single message  with  the correct  parameters.
+Figure~\ref{fig:TreplicaAction}        shows         the        action
+\srcstyle{SetTextAction}  that  represents   the  sending  of  message
+\srcstyle{setText:} in the  form of a prototype. It  is interesting to
+notice that this prototype also has a constructor that initializes the
+fields of the created object  with the same parameters used afterwards
+to send the  encoded message. The creation of these  prototypes can be
+standardized, and the metaobject \srcstyle{treplicaAction} will create
+an appropriate action prototype when  attached to a method declaration
+of the application context.
+
+For      example,      the      \srcstyle{Info}      prototype      in
+Figure~\ref{fig:TreplicaDadosMeta} is  similar to the one  depicted in
+Figure~\ref{fig:TreplicaDados},         except        that         the
+\srcstyle{treplicaAction}  metaobject   is  attached  to   the  method
+\srcstyle{setText:}.  The  metaobject associated with  this annotation
+modifies the prototype \srcstyle{Info}, adding  a new method to it and
+creating  a  new prototype  that  represents  the sending  of  message
+\srcstyle{setText:}     as    a     Treplica    action.      Prototype
+\srcstyle{SetTextAction}  of  Figure~\ref{fig:TreplicaAction}  is  not
+necessary  any more,  since  the metaobject  \srcstyle{treplicaAction}
+adds  an  equivalent  prototype  to the  program  during  compilation.
+Moreover,   \srcstyle{setText:}   messages   sent  directly   to   the
+application  context  will  be  ``intercepted'' and  replaced  by  the
+creation of an  suitable action object and the sending  of this object
+to  Treplica  as an  \srcstyle{execute:}  message  for replication  and
+execution by the framework.
+
+\begin{figure}[h]
+\centering
+\begin{lstlisting}[language=Java]
+package main
+import treplica
+object Info extends Context {
+    var String text
+    ...
+    @treplicaAction
+    func setText: String text {
+        self.text = text;
+    }
+    ...
+}
+\end{lstlisting}
+\caption{Replicated prototype using metaobjects}
+\label{fig:TreplicaDadosMeta}
+\end{figure}
+
+Initialization  of  the  application   context  and  of  the  Treplica
+framework   also  happen   in   a  standardized   way   as  shown   in
+Figure~\ref{fig:TreplicaMain}.  The \srcstyle{treplicaInit} metaobject
+can  be  attached  to  declarations  of  variables  whose  type  is  a
+sub-prototype  of \srcstyle{Context}.   This metaobject  has a  double
+function: it marks  a variable as holding the  application context and
+it  initializes  Treplica.   The  explicit indication  of  the  object
+holding the application context is  important because only the methods
+belonging  to   the  context   prototype  can   be  marked   with  the
+\srcstyle{treplicaAction} metaobject.
+
+For     example,     in     Figure~\ref{fig:TreplicaMainMeta}     the
+\srcstyle{treplicaInit}   metaobject    is   attached    to   variable
+\srcstyle{info}, with the parameters of the desired Treplica instance.
+This metaobject  changes the method \srcstyle{run}  during compilation
+to create a  new instance of \srcstyle{Treplica} and assign  to it the
+object  \srcstyle{info},  similar  to  the  method  \srcstyle{run}  in
+Figure~\ref{fig:TreplicaMain}.
+
+\begin{figure}[h]
+\centering
+\begin{lstlisting}[language=Java]
+object Program {
+    func run: Array<String> args {
+        var local = "/var/tmp/magic" ++ args[1];
+        @treplicaInit( 3, 200, local )
+        var info = Info new;
+        info setText: "text";
+    }
+}
+\end{lstlisting}
+\caption{Treplica configuration using metaobjects}
+\label{fig:TreplicaMainMeta}
+\end{figure}
+
+Using     these    two     metaobjects     only     the    code     in
+Figures~\ref{fig:TreplicaDadosMeta}   and   \ref{fig:TreplicaMainMeta}
+need to be written.  This code is more compact, easier  to read and is
+independent from  any replication concerns or  implementation details.
+This way we can avoid some  of the pitfalls created by the programming
+interface of Treplica and create less complex applications.
+
+
+\subsection{Implementation of the Metaobjects}
+
+This section shows how the metaobjects \srcstyle{treplicaAction} and \srcstyle{treplicaInit} are implemented in Cyan. The compiled version of both classes, the ``.class'' file, are put in directory ``\verb|--meta|''  of  package   \srcstyle{treplica}. When this package is imported, as in Figure~\ref{fig:TreplicaDadosMeta}, the associated annotations can be used.
+
+
+
+\begin{figure}[h]
+\centering
+\begin{lstlisting}[language=Java]
+object Info extends Context {
+   ...
+   func setText: String text {
+       var action = InfosetText new: text;
+       self getTreplica execute: action;
+   }
+
+   func setTextTreplicaAction:
+          String text {
+       self.text = text;
+   }
+   ...
+}
+\end{lstlisting}
+\caption{Prototype \srcstyle{Info} modified}
+\label{fig:InfoChange}
+\end{figure}
+
+\srcstyle{CyanMetaobjectTreplicaAction} is the Java class implementing
+the  metaobject  \srcstyle{treplicaAction}. This  association  happens
+because its method \srcstyle{getName()} returns \verb|"treplicaAction"|. This class implements several interfaces, which are described below together with their role in the metaobject.
+\begin{enumerate}[(a)]
+\item \srcstyle{IActionProgramUnit\_ati} from which methods \srcstyle{ati\_codeToAddToPrototypes} and \srcstyle{ati\_renameMethod} are defined. The first one adds a new method with the same name as the annotated method. In the example of Figure~\ref{fig:InfoChange}, the metaobject of Figure~\ref{fig:TreplicaDadosMeta} adds method \srcstyle{setText:}. Method \srcstyle{ati\_renameMethod} of class \srcstyle{CyanMetaobjectTreplicaAction} renames the original annotated method. In the example, \srcstyle{setText:} is renamed to \srcstyle{setTextTreplicaAction:}.
+
+
+\item    \srcstyle{IActionNewPrototypes\_ati}   from    which   method
+  \srcstyle{ati\_NewPrototypeList}  is redefined  for  creating a  new
+  prototype implementing the Treplica action. In the example, it is prototype
+    \srcstyle{InfosetText} of Figure~\ref{fig:TreplicaMetaActionResult}.
+
+
+\item       \srcstyle{IAction\_dsa}       from      which       method
+  \srcstyle{dsa\_codeToAdd} replaces  calls to non-deter\-mi\-nis\-tic
+  methods by calls to deterministic ones.
+    The project directory and the directory of each package may have a
+    rule  file   called  ``deterministic''  that  describes   how  the
+    replacement should be made.  We will describe this non-determinism
+    removal operation in more detail in the next section.
+
+\begin{figure}[h]
+\centering
+\begin{lstlisting}[language=Java]
+object InfosetText extends Action {
+    var String textVar
+    func init:  String text {
+        textVar = text;
+    }
+
+    override
+    func executeOn: Context context {
+        type context
+            case Info obj {
+                obj setTextTreplicaAction:  textVar;
+            }
+    }
+}
+\end{lstlisting}
+\caption{Prototype created by \srcstyle{treplicaAction}}
+\label{fig:TreplicaMetaActionResult}
+\end{figure}
+
+
+
+
+\item \srcstyle{ICheckDeclaration\_dsa2} from which method \srcstyle{dsa2\_checkDeclaration} is redefined to check if there are any calls to non-deterministic methods in the final code. This should not be necessary since method \srcstyle{dsa\_codeToAdd} replaces all possible calls to non-deterministic methods by calls to deterministic ones. However, only unary methods are replaced and \srcstyle{dsa2\_checkDeclaration} checks keywords methods too. Besides that, other metaobjects may have introduced non-deterministic method calls in Phase 6 (if they add code).
+
+
+
+\end{enumerate}
+
+Class   \srcstyle{CyanMetaobjectTreplicaInit}   is  the   Java   class
+implementing    metaobject   \srcstyle{treplicaInit}.     This   class
+implements  interface  \srcstyle{IActionVariableDeclaration\_dsa}  and
+redefines its method  \srcstyle{dsa\_codeToAddAfter}. This method adds
+code  after the  variable  declaration to  create  and initialize  the
+\srcstyle{Treplica} object.   For example,  this metaobject  takes the
+annotated  code  in  Figure~\ref{fig:TreplicaMainMeta}  and  adds  the
+initialization  code in  Lines  5--10 of  Figure~\ref{fig:InitChange}.
+The    newly    added    code    makes    \srcstyle{info}    reference
+\srcstyle{treplicainfo}, the treplica object, and vice-versa.
+
+
+\begin{figure}[h]
+\centering
+\begin{lstlisting}[language=Java]
+object Program {
+    func run: Array<String> args {
+        var local = "/var/tmp/magic" ++ args[1];
+        var info = Info new;
+        var treplicainfo = Treplica new;
+        treplicainfo runMachine: info
+                     numberProcess: 3
+                     rtt: 200
+                     path: local;
+        info setTreplica: treplicainfo;
+        info setText: "text";
+    }
+}
+\end{lstlisting}
+\caption{Prototype \srcstyle{Program} modified}
+\label{fig:InitChange}
+\end{figure}
+
+
+\begin{comment}
+Metaobjects are somewhat related to annotations of Java \cite{Gosling:2014:JLS:2636997} and other Java-based languages such as Groovy \cite{groovy2017}. Unlike Java, metaobjects can change the source code in which they are used.
+
+\end{comment}
+
+To  further  illustrate  the  transformations and  code  generated  by
+metaobject \srcstyle{treplicaAction}, we will  use an annotated method
+with a single keyword, shown in Figure~\ref{fig:tag}. The code in this
+figure isn't valid Cyan code, but it  is useful to show how the tokens
+of the  method declaration are  used by  the metaobject to  create new
+code.
+\begin{figure}[hp]
+\centering
+\begin{lstlisting}
+object Proto
+  @treplicaAction
+  func s1: T1 p1, T2 p2, ... Tn pn { ... }
+  ... // other methods
+end
+\end{lstlisting}
+\caption{\srcstyle{treplicaAction} attached to a generic method}
+\label{fig:tag}
+\end{figure}
+
+\begin{figure}[hp]
+\centering
+\begin{lstlisting}
+object Protos1 extends Action
+  var T1 p1Var
+  var T2 p2Var
+  ...
+  var Tn pnVar
+
+  func init: T1 p1, T2 p2, ... Tn pn {
+    p1Var = p1;
+    p2Var = p2;
+    ...
+    pnVar = pn;
+  }
+
+  override
+  func executeOn: Context context {
+    type context
+        case Proto obj {
+            obj s1TreplicaAction_UniqueId: p1Var, p2Var, ... pnVar;
+        }
+  }
+end
+\end{lstlisting}
+\caption{New prototype that represents the action of calling a method}
+\label{fig:protos1}
+\end{figure}
+
+From  the  method in  Figure~\ref{fig:tag},  \srcstyle{treplicaAction}
+creates  a prototype  that  represents the  Treplica  action shown  in
+Figure~\ref{fig:protos1}.  \srcstyle{UniqueId}  is a  unique temporary
+name that is  different from every other identifier.   In the original
+prototype    (\srcstyle{Proto}),    the    method    annotated    with
+\srcstyle{treplicaAction} is  renamed and a  new method is  created as
+shown in Figure~\ref{fig:newproto}.
+
+\begin{figure}[hp]
+\centering
+\begin{lstlisting}
+object Proto extends Context
+
+  @treplicaAction
+  func s1: T1 p1, T2 p2, ... Tn pn {
+    var action = Protos1 new: p1, p2, ... pn;
+    self getTreplica execute: action;
+  }
+
+  func s1TreplicaAction_UniqueId: T1 p1, T2 p2, ... Tn pn {
+    // original method s1:
+  }
+end
+\end{lstlisting}
+\caption{Modified prototype \srcstyle{Proto} }
+\label{fig:newproto}
+\end{figure}
+
+From a declaration
+\begin{lstlisting}
+@treplicaInit( processes, rtt, local )
+var varName = ContextType new;
+\end{lstlisting}
+metaobject   \srcstyle{treplicaInit}  produces   the  code   shown  in
+Figure~\ref{fig:newdec}
+
+\begin{figure}[hp]
+\centering
+\begin{lstlisting}
+var varName = ContextType new;
+var treplicaVarName = Treplica new;
+treplicaVarName runMachine: varName
+                numberProcess: processes
+                rtt: rtt
+                path: local;
+varName setTreplica: treplicaVarName;
+\end{lstlisting}
+\caption{The new declaration of a context }
+\label{fig:newdec}
+\end{figure}
+
+
+\subsection{Non-determinism Detection}
+
+Besides  removing  boilerplate  code  from  a  program,  the  proposed
+metaobjects offer an  initial support for validating  if the resulting
+code  is  indeed  able  to  be   replicated.   As  we  have  shown  in
+Section~\ref{treplica}, methods  that change the state  of the context
+must be deterministic and should  not create external effects. In this
+work, we considered only the question of identifying non-deterministic
+methods and optionally replacing  them with deterministic versions. In
+the  previous  section  we  have briefly  described  these  tests  and
+substitutions and now we describe them in a bit more depth.
+
+Identifying deterministic  methods is complex  and this work  does not
+offer comprehensive  solutions to this problem.   Instead, \emph{root}
+non-deterministic  methods are  defined  by the  developer  in a  rule
+file. These methods are usually  operating system services that aren't
+deterministic  by nature,  such as  reading  the time  or receiving  a
+packet  from the  network.  Once  these  root methods  are defined  as
+non-deterministic,  any other  method  that  uses a  non-deterministic
+method is also flagged as non-deterministic.
+
+Besides identifying a non-deterministic  method, the rule file defines
+a  replacement  method.   This  method   can  be  implemented  by  the
+application  of  by   a  supporting  library  and   should  provide  a
+deterministic  version of  the indicated  method. For  example, it  is
+possible to define  a method that returns not the  current time, but a
+timestamp prerecorded in the action object.
+
+In the  rule file, each rule  is defined in  a line and its  format is
+shown in Figure~\ref{fig:ValidateRuleExample}.  The rules are split in
+two  parts by  the symbol  \srcstyle{-}.  The  first part  defines the
+non-deterministic method,  the prototype that defines  this method and
+the  package  where it  can  be  found.   The  second part  defines  a
+deterministic method that will  replace the non-deterministic one, the
+prototype that  defines this method  and the  package where it  can be
+found.  During  compilation, the  metaobject \srcstyle{treplicaAction}
+will  replace \srcstyle{methodA}  with a  call to  \srcstyle{methodB},
+with the  parameters of the original  call used as parameters  of this
+new  call.   The  prototype  that defines  \srcstyle{methodB}  is  not
+instantiated, it is used in static form.
+
+\begin{figure}[h]
+\centering
+\begin{lstlisting}[language=Java]
+packageA,PrototypeA,methodA-packageB,PrototypeB,methodB
+\end{lstlisting}
+\caption{Example of non-determinism rule}
+\label{fig:ValidateRuleExample}
+\end{figure}
+
+The  replacement  of  methods  does not  cover  all  possibilities  of
+non-determinism  removal  in  a   program.  Thus,  after  the  initial
+identification  and  replacement  that  happens  in  Phase  6  of  the
+compiler, another round of checking happens  in Phase 9. In this final
+check, remaining  non-deterministic methods  will cause  a compilation
+error. This  procedure is a first  tentative step in the  direction of
+isolating  replication related  inconsistencies,  but it  shows it  is
+possible to verify  the source code based on  the restrictions imposed
+by the programming environment.
+
+As  an  example, consider  the  prototype  \srcstyle{Info} defined  in
+Figure~\ref{fig:ValidateExample}.    This   prototype  implements   an
+application  context and  has a  method \srcstyle{set:}  marked as  an
+action. During  compilation, if  the developer  creates the  rule file
+shown    in     Figure~\ref{fig:ValidateRuleExample2}    the    method
+\srcstyle{ageInSecNd},  that has  non-deterministic behavior,  will be
+replaced by the deterministic \srcstyle{ageInSec} method.
+
+\begin{figure}[htbp]
+\centering
+\begin{lstlisting}[language=Java]
+package main
+...
+object Info extends Context {
+    var String text
+
+    // non-deterministic behavior
+    func ageInSecNd -> Long {...}
+
+    func ageInSec -> Long {...}
+
+    @treplicaAction
+    func set: String text {
+        self.text = text ++ " age: "
+          ++ ageInSecNd;
+    }
+    ...
+}
+\end{lstlisting}
+\caption{Example of non-determinism removal}
+\label{fig:ValidateExample}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\begin{lstlisting}[language=Java]
+main,Info,ageInSecNd-main,Info,ageInSec
+\end{lstlisting}
+\caption{Non-determinism rule for Info prototype}
+\label{fig:ValidateRuleExample2}
+\end{figure}
+
+The  class  that   defines  the  metaobject  \srcstyle{treplicaAction}
+implements   the   interface  \srcstyle{ICheckDeclaration\_dsa2}   and
+defines  the  method \srcstyle{dsa2\_checkDeclaration}.   This  method
+performs a depth-first search starting  from the method annotated with
+\srcstyle{@treplicaAction},  and  passes  through  the  methods  calls
+recursively.   All called  methods  are verified  based  on the  rules
+file. The depth-first search returns when there are no more methods to
+be  visited.   In  the  example  of  Figure~\ref{fig:ValidateExample},
+\srcstyle{treplicaAction} looks for  non-deterministic method calls in
+\srcstyle{set:} and in  any other method \srcstyle{set:}  may call. In
+this  case,  \srcstyle{ageInSecNd}  and  in  any  other  methods  that
+\srcstyle{ageInSecNd}        may        call.        The        method
+\srcstyle{dsa2\_checkDeclaration} checks which calls are considered as
+non-deterministic based on the rules file.
+
+
+
+\section{Related Work}
+\label{related}
+
+OpenReplica~\cite{altinbuken2012commodifying}   is   a  framework   to
+implement  replicated services  similar to  Treplica~\cite{vieira08a}.
+Along with
+Treplica,  OpenReplica represents  the  state of  the  art for  easily
+creating   replicated   applications   and    both   use   a   similar
+object-oriented approach  that suffers from the  same transparency and
+code verification problems. Both frameworks require an interface layer
+to  encapsulate the  methods  implementing changes  to the  replicated
+state   and  neither   allows   code  inspections   that  search   for
+inconsistencies in the implementation of the interface.  In this paper
+we use metaprogramming  to tackle these challenges,  similarly to the
+way metaprogramming has been used to attack similar problems.
+
+Rentschler  et al.~\cite{rentschler2014designing}  argues  the use  of
+domain specific  languages (DSLs) to increase  programmer productivity
+and  quality and  proposes the  use of  metaprogramming to  translate
+these    DSLs   in    other    languages.    They    use   the    Xtend
+language~\cite{rentschler2014designing}  to  transform   a  DSL  using
+active  annotations.  We  use  a similar  approach  of automatic  code
+transformation. However, starting from centralized code written in a general
+purpose language,  we arrive  in distributed code  written in  the same
+language.  Moreover,  the metaprogramming infrastructure  provided by
+Cyan allows for a more elegant implementation than the one obtained by
+using Xtend. Another  similar work is the one by Blewitt et al.~\cite{blewitt2005automatic} that
+proposes  the   use  of   metaprogramming  to   automatically  create
+components that implement design patterns.
+
+Groovy \cite{groovy2017},
+Xtend~\cite{rentschler2014designing}, and
+Nemerle   \cite{kamil2005} support compile-time metaprogramming through annotations in the source code. The annotations are called \textit{macros} in Nemerle and \textit{active annotations} in Xtend. We will use the Cyan terms for all of them.
+In these languages, metaobjects can  act in several compilation phases
+and they can add code, create new classes, do checks. Annotations can be attached to declarations such as classes and methods. Then metaobject \srcstyle{treplicaAction} could be implemented in Groovy, Xtend, and Nemerle except for one point: the checks related to non-deterministic methods. These checks are
+made in Phase 9 of the Cyan compiler, after every possible code change has already been made.\footnote{The code can be modified only until Phase 6.} To our knowledge, these languages do not have a compilation phase in which all code changes are prohibited. It may be possible to implement non-deterministim checks using some clever compiler trick, but we are not aware of that.
+
+Groovy, Xtend, and  Nemerle do not allow an annotation  to be attached
+to     a    local     variable     declaration.    Then     metaobject
+\srcstyle{treplicaInit}  cannot  be   directly  implemented  in  these
+languages. It could, probably, be implemented by indirect means: the annotation would be attached to a method and it would take a local variable name as parameter. Then the metaobject would walk in the method AST and add the code as the Cyan metaobject does.
+
+Chlipala~\cite{chlipala2013bedrock}   shows  a   proposal  for   using
+metaprogramming  to perform  source code  validations at  compile time
+using  macros.   Inspecting  the   source  code  for  problems  during
+compilation  increases  the  application performance,  because  it  is
+unhindered             by            run-time             validations.
+Mekruksavanich~\cite{mekruksavanich2012analytical}   proposes  similar
+validations  in which  metaprogramming is  used to  detect defects  in
+object-oriented programs by the use  of software components capable of
+describing and identifying such defects.  Both these works tackle different
+problems from  the ones  described in  this paper,  but both  show the
+benefits of the use of metaprogramming as an aid in the development of
+correct programs.
+
+Compiler  directives, have  been successfully  used to  accelerate the
+creation of  parallel programs. OpenMP~\cite{dagum1998openmp}  aims to
+ease the  conversion of legacy  centralized C++ and Fortran  code into
+portable shared-memory parallel code. OpenACC~\cite{wienke2012openacc}
+uses the same approach of compiler directive annotated code to offload
+some  compute   intensive  tasks   to  accelerator  devices   such  as
+general-purpose  graphic processing  units (GPGPUs).   Both approaches
+simplify  the task  of producing  parallel code,  but still  require a
+considerable knowledge  of the programmer about  how parallel programs
+work. We  use metaobjects in a  simpler way and  aim to completely
+shield  the programmer  from  details about  the distributed  programming
+model that is used.  Currently we block the occurrence of invalid
+non-deterministic   method  calls   and  intend   in  the   future  to
+extend detection to other types of consistency violations.
+
+Regarding  the problem  of separating  the nonfunctional  requirements
+from the functional  ones, there are works on  aspect orientation that
+try to solve the same  problem. AspectJ \cite{kiczales01overview} is a
+Java extension  that supports \textit{aspects}, which  are composed by
+\textit{advices},        ordinary         Java        code,        and
+\textit{pointcuts}. \textit{Advices} can change the behavior of points
+of the user source code specified by \textit{pointcuts}.  For example,
+it can change instance variable access and method calls. Aspects are a
+kind of  metaprogramming that is  less general  than that of  Cyan, in
+which code  can be  inserted in  several compiler  phases and  in many
+places  that  are  out  of  reach  of  aspects.   Besides  that,  Cyan
+metaobjects have access to most of the information the compiler has at
+a specific point  of the compilation, which aspects  do not.  Probably
+aspects can be  implemented in Cyan just by  creating new metaobjects,
+without any language modifications.
+
+%Outro trabalho que se relaciona ao problema de separar requisitos
+%funcionais de não funcionais é a pesquisa de  Hitz e Montazeri~\cite{hitz1995measuring}.
+%Ela define um método para quantificar essa separação de requisitos.
+%Isso pode no futuro ser integrado a essa pesquisa para mostrar,
+%por meio de métricas, como a metaprogramação melhorar o código-fonte com
+%a separação desses requisitos.
+
+% The other research related to this problem is the Hitz and Montazeri~\cite{hitz1995measuring} research. It defines a method to measure the requirements separation. In the future their research can be integrated to this research to show how metaprogramming can improve the separation of these requirements in the source code.
+
+\section{Conclusion}
+\label{conclusion}
+
+We have  shown how  to use the  metaprogramming infrastructure  of the
+Cyan language to transparently  generate and validate integration code
+that  uses the  Treplica  replication framework.   This way,  programs
+written  in   Cyan  can  easily   be  converted  from   a  centralized
+architecture to a  replicated one by attaching  metaobjects to mutator
+methods.  The  set of  metaobjects created showed  for the  first time
+that  it  possible  to  automatically  create  replicated  code  using
+metaprogramming.
+
+We also demonstrated  the power and simplicity of the  MOP of the Cyan
+language  to create  useful metaobjects  in  a very  direct way.   The
+programmer of a metaobject in Cyan does  not have to deal with the AST
+to  generate  code, she  only  needs  to  insert textual  source  code
+directly to the original source  code. However, the programmer can use
+the AST  if necessary to know  what the compiler knows  about the code
+being compiled.
+
+Moreover,  we  demonstrated  the  potential of  using  metaobjects  to
+validate  the  generated   code  with  respect  to   the  presence  of
+non-determinism,  by replacing  the non-deterministic  operations with
+equivalent  deterministic   operations.   We  believe   the  technique
+presented to detect non-determinism can  be extended to other types of
+violations of  replication integrity,  such as calling  static methods
+outside  the  application context.   In  the  future, we  envision  an
+application environment  where distributed programming errors,  one of
+the main factors limiting the use of this programming paradigm, can be
+directly found by the compiler.  Also, the ability to create isolated,
+deterministic operations  seems to be  very useful in the  creation of
+tests suites.
+
+
+\section*{Acknowledgments}
+
+This  work  was  supported  by the  S\~ao  Paulo  Research  Foundation
+(FAPESP)  under  grant  \#2014/01817-3  and  by  FIT  -  Instituto  de
+Tecnologia.
+
+
+\section*{References}
+
+\bibliographystyle{elsarticle-num}
+\bibliography{cyan.metaobjects.treplica}
+
+\end{document}
+
+
+\begin{comment}
+\begin{lstlisting}[language=Java, caption={Versão original do código-fonte que usa \textbf{treplicaAction}}, label={cod:originalactioncf}, mathescape=true]
+object $\langle nome\ do\ prot\acute{o}tipo \rangle$ extends Context {
+  ...
+  @treplicaAction
+  func $\langle nome\ do\ m\acute{e}todo \rangle$:  $\langle tipo\ do\ par\hat{a}metro\ 1 \rangle$ $\langle nome\ do\ par\hat{a}metro\ 1 \rangle$,
+      $\langle tipo\ do\ par\hat{a}metro\ 2 \rangle$ $\langle nome\ do\ par\hat{a}metro\ 2 \rangle$,
+      $\langle tipo\ do\ par\hat{a}metro\ n \rangle$ $\langle nome\ do\ par\hat{a}metro\ n \rangle$ {
+    ...
+  }
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=Java, caption={Protótipo gerado por \textbf{treplicaAction}}, label={cod:verprotaction}, mathescape=true]
+object $\langle\langle nome\ do\ prot\acute{o}tipo \rangle$$\langle nome\ do\ m\acute{e}todo \rangle\rangle$ extends Action {
+  var $\langle tipo\ do\ par\hat{a}metro\ 1 \rangle$ $\langle nome\ do\ par\hat{a}metro\ 1 \rangle$Var
+  var $\langle tipo\ do\ par\hat{a}metro\ 2 \rangle$ $\langle nome\ do\ par\hat{a}metro\ 2 \rangle$Var
+  var $\langle tipo\ do\ par\hat{a}metro\ n \rangle$ $\langle nome\ do\ par\hat{a}metro\ n \rangle$Var
+
+  func init: $\langle tipo\ do\ par\hat{a}metro\ 1 \rangle$ $\langle nome\ do\ par\hat{a}metro\ 1 \rangle$,
+      $\langle tipo\ do\ par\hat{a}metro\ 2 \rangle$ $\langle nome\ do\ par\hat{a}metro\ 2 \rangle$,
+      $\langle tipo\ do\ par\hat{a}metro\ n \rangle$ $\langle nome\ do\ par\hat{a}metro\ n \rangle$ {
+    $\langle nome\ do\ par\hat{a}metro\ 1 \rangle$Var = $\langle nome\ do\ par\hat{a}metro\ 1 \rangle$;
+    $\langle nome\ do\ par\hat{a}metro\ 2 \rangle$Var = $\langle nome\ do\ par\hat{a}metro\ 2 \rangle$;
+    $\langle nome\ do\ par\hat{a}metro\ n \rangle$Var = $\langle nome\ do\ par\hat{a}metro\ n \rangle$;
+  }
+
+  override
+  func executeOn: Context context {
+    var obj = $\langle nome\ do\ prot\acute{o}tipo \rangle$ cast: context;
+    obj $\langle nome\ do\ m\acute{e}todo \rangle$TreplicaAction$\langle id\ \acute{u}nico \rangle$: $\langle nome\ do\ par\hat{a}metro\ 1 \rangle$Var, $\langle nome\ do\ par\hat{a}metro\ 2 \rangle$Var, $\langle nome\ do\ par\hat{a}metro\ n \rangle$Var;
+  }
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=Java, caption={Nova versão do protótipo que contém o método anotado}, label={cod:vercontextaction}, mathescape=true]
+object $\langle nome\ do\ prot\acute{o}tipo \rangle$ extends Context {
+  ...
+  func $\langle nome\ do\ m\acute{e}todo \rangle$:  $\langle tipo\ do\ par\hat{a}metro\ 1 \rangle$ $\langle nome\ do\ par\hat{a}metro\ 1 \rangle$,
+        $\langle tipo\ do\ par\hat{a}metro\ 2 \rangle$ $\langle nome\ do\ par\hat{a}metro\ 2 \rangle$,
+        $\langle tipo\ do\ par\hat{a}metro\ n \rangle$ $\langle nome\ do\ par\hat{a}metro\ n \rangle$ {
+    var action = $\langle\langle nome\ do\ prot\acute{o}tipo \rangle$$\langle nome\ do\ m\acute{e}todo \rangle\rangle$ new:
+      $\langle nome\ do\ par\hat{a}metro\ 1 \rangle$, $\langle nome\ do\ par\hat{a}metro\ 2 \rangle$, $\langle nome\ do\ par\hat{a}metro\ n \rangle$;
+    self getTreplica execute: action;
+  }
+
+  func $\langle nome\ do\ m\acute{e}todo \rangle$TreplicaAction$\langle id\ \acute{u}nico \rangle$:
+      $\langle tipo\ do\ par\hat{a}metro\ 1 \rangle$ $\langle nome\ do\ par\hat{a}metro\ 1 \rangle$,
+      $\langle tipo\ do\ par\hat{a}metro\ 2 \rangle$ $\langle nome\ do\ par\hat{a}metro\ 2 \rangle$,
+      $\langle tipo\ do\ par\hat{a}metro\ n \rangle$ $\langle nome\ do\ par\hat{a}metro\ n \rangle$ {
+    ...
+  }
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=Java, caption={Versão original do código-fonte que usa \textbf{treplicaInit}}, label={cod:originalinitcf}, mathescape=true]
+@treplicaInit( $\langle processos \rangle$,  $\langle rtt \rangle$,  $\langle local \rangle$ )
+var $\langle nome\ da\ vari\acute{a}vel \rangle$ = $\langle tipo\ do\ contexto \rangle$ new;
+\end{lstlisting}
+
+\begin{lstlisting}[language=Java, caption={Nova versão do código-fonte de inicialização de Treplica}, label={cod:verinitcf}, mathescape=true]
+var $\langle nome\ da\ vari\acute{a}vel \rangle$ = $\langle tipo\ do\ contexto \rangle$ new;
+var treplica$\langle nome\ da\ vari\acute{a}vel \rangle$ = Treplica new;
+treplica$\langle nome\ da\ vari\acute{a}vel \rangle$ runMachine: $\langle nome\ da\ vari\acute{a}vel \rangle$
+      numberProcess: $\langle processos \rangle$ rtt: $\langle rtt \rangle$ path: $\langle local \rangle$;
+$\langle nome\ da\ vari\acute{a}vel \rangle$ setTreplica: treplica$\langle nome\ da\ vari\acute{a}vel \rangle$;
+\end{lstlisting}
+
+
+
+\end{comment}

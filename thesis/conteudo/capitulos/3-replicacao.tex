@@ -1,0 +1,267 @@
+\chapter{Replicação de Processos}
+\label{cap:replicacao}
+
+Replicação é mais um conceito chave dessa pesquisa. Esse capítulo inicia mostrando como a replicação funciona, ela é explicada de modo simplificado por meio de um exemplo prático. O capítulo segue apresentando o \textit{framework} Treplica e suas classes, usados ao decorrer do restante da pesquisa. O \textit{framework} OpenReplica é mostrado na sequência, ele é comparado ao \textit{framework} Treplica. O capítulo encerra explicando coesão e acoplamento, que são conceitos que motivam o uso de metaprogramação para desenvolver programas replicados.
+
+\section{Ações e Estados das Replicas}
+
+Alguns programas podem ter sua execução representada por um conjunto de estados e um conjunto de transições. Esses estados representam a situação do programa em um determinado instante de sua execução e as transições representam as ações realizadas pelo programa para ir de um estado para outro.
+
+\begin{figure}[H]
+	\begin{framed}
+		\vspace*{0.3cm}
+		\centering
+		\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=5.0cm,
+		semithick]
+		\tikzstyle{every state}=[fill=white,draw=black,text=black]
+		
+		\node[initial,state]  (A)              {$q_a$};
+		\node[state]          (B) [right of=A] {$q_b$};
+		\node[accepting,state] (C) [right of=B] {$q_c$};
+		
+		\path (A) edge node {multiplica} (B);
+		\path (B) edge node {mostra} (C);
+		\end{tikzpicture}
+		\vspace*{0.3cm}
+	\end{framed} 
+	\caption{Execução do programa que multiplica seis por dois}
+	\label{fig:ExecucaoAutomato}
+\end{figure}
+
+O programa --- \textbf{6 multiplica 2 mostra} --- criado usando a linguagem da Figura~\ref{fig:calculadora} pode ter sua execução representada por três estados e duas transições, como mostrado na Figura~\ref{fig:ExecucaoAutomato}. A execução desse programa tem início no estado $q_a$. Nesse estado o programa tem os valores seis e dois armazenados em uma memória reservada fornecida pelo computador. Na transição para o estado $q_b$ os valores são multiplicados e o resultado doze também é armazenado nessa memória. Então quando o programa está no estado $q_b$ ele tem os números seis, dois e doze armazenados na memória reservada. Na transição para $q_c$ o resultado é mostrado e todos os números mantidos pelo programa são liberados.
+
+Durante a execução desse programa, o resultado só é mostrado na transição do estado $q_b$ para $q_c$. Caso o computador interrompa a execução no momento em que o programa está no estado $q_b$ o resultado não será mostrado. Em situações críticas em que não se pode admitir falhas, não é possível depender da execução de uma única instância do programa para obter um resultado. Nessas situações é mais adequado executar várias instâncias de um mesmo programa, de modo que essas instâncias colaborem umas com as outras para garantir que pelo menos uma delas irá terminar a execução, mesmo que alguma falha ocorra~\cite{cachin2011introduction}. Essa técnica de executar um programa usando várias instâncias é chamada de replicação.
+
+A replicação garante que cada vez que uma instância ou réplica realiza uma transição, as outras réplicas também realizam a mesma transição, de modo que em todas as instâncias a ordem das transições realizadas seja a mesma. Uma réplica que parou de funcionar pode ser recuperada pois as demais instâncias sabem quais transições foram executadas e qual a ordem dessas execuções. Então, para recuperar a réplica que falhou, basta criar uma nova instância e fazer com que ela execute todas as transições que as demais réplicas já tenham realizado.
+
+O programa de multiplicação se torna capaz de tolerar falhas ao ser executado com várias réplicas. Isso acontece porque mesmo que uma réplica pare de executar no estado $q_b$, uma nova réplica pode ser criada e atualizada com as transições de uma outra instância que esteja executando normalmente. Essa nova réplica substitui a que falhou, e a execução prossegue até que as réplicas cheguem ao estado $q_c$ e o programa termine. A replicação não altera o comportamento do programa de multiplicação, ele continua recebendo dois números e mostrando o resultado da multiplicação desses valores. Por isso é desejável que a escrita do programa --- \textbf{6 multiplica 2 mostra} --- seja modificada o menos possível~\cite{vieira2010implementation}, visto que a funcionalidade original do programa não sofreu alterações.
+
+Esse tipo de replicação pode ser definido de duas formas: replicação passiva ou replicação ativa. No modelo passivo existe uma réplica (mestre) que realiza a escrita dos dados e a propagação dessa mudança para as demais cópias (escravos), enquanto que a leitura dos dados pode ser feita a partir de qualquer réplica. No modelo ativo todas as réplicas modificam (escrevem) os dados de modo simultâneo e a leitura pode ser feita a partir de qualquer réplica~\cite{schneider1990implementing}. Nessa arquitetura é necessário um protocolo para garantir a ordem na realização das operações. 
+
+Em ambos os modelos, as operações aplicadas às réplicas devem ser deterministas~\cite{vieira2010implementation}. Não importa quando e onde elas sejam aplicadas às réplicas, as mudanças devem fornecer sempre o mesmo resultado. Um exemplo de operação não determinista é determinar a hora atual de modo convencional. Implementada de forma ingênua, essa operação retorna um valor diferente todas as vezes que for executada por uma réplica da aplicação.
+
+\section{Introdução ao Framework Treplica em Linguagem Java}
+\label{sec:treplicajavaint}
+
+Treplica é um \textit{framework} que permite desenvolver aplicações replicadas em Java, implementando replicação ativa baseada em máquina de estados similar ao exemplo da Figura~\ref{fig:ExecucaoAutomato}. O desenvolvimento de aplicações com Treplica deve seguir algumas etapas. Primeiro, é definida a classe que contém os dados que são replicados. O Código-Fonte~\ref{cod:TreplicaDadosAp} mostra a classe \srcstyle{Info} que contém os dados a serem replicados, eles são dois atributos privados, um \srcstyle{int} e uma \srcstyle{String}. Esses atributos guardam os valores modificados pela ação que será discutida em breve. A classe \srcstyle{Info} também possui dois métodos que são usados para atribuir valores aos atributos privados de \srcstyle{Info}.
+
+\begin{lstlisting}[language=Java, caption={Exemplo de classe que contém os dados que são replicados}, label={cod:TreplicaDadosAp}]
+public class Info implements Serializable {
+
+  private int number;
+  private String text;
+	
+  void setNumber(int number) {
+    this.number = number;
+  }
+	
+  void setText(String text) {
+    this.text = text;
+  }
+	
+  String getText() {
+    return this.text;
+  }
+  
+  int getNumber() {
+    return this.number;
+  }
+}
+\end{lstlisting}
+
+Após a definição da classe que contém os dados replicados é necessário que uma ação seja definida. Uma ação em Treplica é um termo usado para se referir a transição que modifica um estado replicado. A interface \srcstyle{Action} define a interface de uma ação responsável por alterar os valores da classe sendo replicada. Essa alteração de valores é feita pelo método \srcstyle{executeOn} da interface \srcstyle{Action} que deve ser implementado. O Código-Fonte~\ref{cod:TreplicaActionAp} mostra a classe \srcstyle{UpdateAction}, que implementa \srcstyle{Action} e funciona como uma casca para a chamada das funções \srcstyle{setNumber} e \srcstyle{setText}, contendo os parâmetros necessários para efetuar a chamada. Quando um objeto de \srcstyle{UpdateAction} é passado para a máquina de estados do Treplica, ela envia uma cópia desse objeto às demais réplicas e todas chamam o método \srcstyle{executeOn}, passando como parâmetro a cópia local do objeto \srcstyle{Info}. Assim todas as cópias ficam com objetos \srcstyle{Info} contendo os mesmos valores.
+
+\begin{lstlisting}[language=Java, caption={Exemplo de classe que altera os valores replicados}, label={cod:TreplicaActionAp}]
+protected static class UpdateAction implements Action, Serializable {
+  private int updateNumber;
+  private String updateText;	
+	
+  public UpdateAction(int number, String text) {
+    this.updateNumber = number;
+    this.updateText = text;
+  }	
+	
+  public Object executeOn(Object states) {
+    Info info = (Info) states;
+    info.setNumber(updateNumber);
+    info.setText(updateText);
+    return null;
+  }
+}
+\end{lstlisting}
+ 
+Treplica deve ser inicializado antes que as ações possam ser executadas, isso pode ser feito pelo próprio método \srcstyle{main} da aplicação. O Código-Fonte~\ref{cod:TreplicaMainAp} mostra a inicialização de Treplica e mostra como uma ação é executada. O estado a ser replicado é mantido sob guarda de Treplica, em um objeto \srcstyle{StateMachine}. Esse objeto é criado e inicializado pelo método \srcstyle{createPaxosSM} que recebe, entre outros argumentos, o estado inicial do objeto a ser replicado. A chamada ao método \srcstyle{execute} passando como parâmetro um objeto \srcstyle{UpdateAction} é equivalente a uma chamada aos métodos \srcstyle{setNumber} e \srcstyle{setText} do objeto replicado (Código-Fonte~\ref{cod:TreplicaActionAp}). Esse método de Treplica ordena, encaminha e aplica a ação na instância local e nas demais réplicas para que sejam atualizadas.
+
+\begin{lstlisting}[language=Java, caption={Exemplo de classe que prepara o Treplica e executa uma ação}, label={cod:TreplicaMainAp}]
+public class App {
+  public static StateMachine states;
+
+  public static void main(String[] args) throws Exception {
+    Info info = new Info();
+    states = StateMachine.createPaxosSM( 
+      (Serializable)info, 200, 2, false, "/var/tmp/app" + args[0]);
+    states.execute(new UpdateAction(2, "text"));
+  }
+}
+\end{lstlisting}
+
+O diagrama de sequência da Figura~\ref{fig:trepexecexample} mostra o fluxo de execução dessa aplicação. As réplicas \textbf{A} e \textbf{B} iniciam a execução pelo método \srcstyle{main} da classe \srcstyle{App}. O contexto da aplicação (\srcstyle{Info}) e a máquina de estados de Treplica (\srcstyle{StateMachine}) têm seus objetos instanciados por esse método. Em seguida a \textbf{Réplica A} chama o método \srcstyle{execute} de Treplica que irá executar a ação \srcstyle{UpdateAction}. Treplica replica essa chamada para a \textbf{Réplica B} e executa a ação replicada em ambas as réplicas (\srcstyle{executeOn}).
+
+A execução das ações em uma aplicação replicada pode ocorrer de duas formas: a réplica que chama uma ação é a mesma réplica que a executa, ou a réplica que executa a ação a recebeu de outra réplica. A ação executada pela \textbf{Réplica A} foi chamada pela própria réplica \textbf{Réplica A}. Enquanto a ação executada pela \textbf{Réplica B} foi chamada pela réplica \textbf{Réplica A}. Replicar uma ação significa serializar o objeto que a representa e enviar esse objeto às outras réplicas. Nesse exemplo o objeto do tipo \srcstyle{UpdateAction} é serializado com os parâmetros que recebeu quando foi instanciado, nesse caso o número \srcstyle{2} e a \textit{string} \srcstyle{"text"}. Ele é enviado (replicado) às outras réplicas e cada uma chama o método \srcstyle{executeOn} de sua cópia desse objeto. 
+
+\begin{figure}[H]
+	\centering
+	\begin{sequencediagram}[font=\fontsize{0.26cm}{0.29cm}\selectfont\ttfamily]
+		\draw (5.7,-1)  node[right] {\small Réplica A};
+		\draw (8.4,-1)  node[right] {\small Réplica B};
+		\draw (8.1,0) -- (8.1,-3.8);
+        \draw (8.1,-4.8) -- (8.1,-10.3);
+		%\draw (8.1,-4.8) -- (8.1,-8.8);
+		%\draw (8.1,-9.5) -- (8.1,-10.3);
+		\newthread{InstAMain}{App}
+		\newinst{InstAInfo}{Info}
+		\newinst{InstAUpdate}{UpdateAction}
+		\newinst{InstAState}{StateMachine}
+		
+		\newinst[0.6]{InstBState}{StateMachine}
+		\newinst{InstBUpdate}{UpdateAction}
+		\newinst{InstBInfo}{Info}
+		\newthread{InstBMain}{App}
+		
+		\begin{call}{InstAMain}{new Info()}{InstAInfo}{info} \end{call}
+		\begin{call}{InstAMain}{createPaxosSM()}{InstAState}{states} \end{call}
+		
+		\prelevel \prelevel \prelevel \prelevel
+		
+		\begin{call}{InstBMain}{new Info()}{InstBInfo}{info} \end{call}
+		\begin{call}{InstBMain}{createPaxosSM()}{InstBState}{states} \end{call}
+			
+		\begin{call}{InstAMain}{execute()}{InstAState}{}
+			\postlevel
+			\begin{call}{InstAState}{executeOn()}{InstAUpdate}{} 
+				\begin{call}{InstAUpdate}{setNumber()}{InstAInfo}{} \end{call}
+				\begin{call}{InstAUpdate}{setText()}{InstAInfo}{} \end{call}
+			\end{call}
+		
+			\prelevel \prelevel \prelevel 
+			\prelevel \prelevel \prelevel \prelevel
+		
+			\begin{messcall}{InstAState}{replicação}{InstBState}{}
+				\postlevel
+				\begin{call}{InstBState}{executeOn()}{InstBUpdate}{} 
+					\begin{call}{InstBUpdate}{setNumber()}{InstBInfo}{} \end{call}
+					\begin{call}{InstBUpdate}{setText()}{InstBInfo}{} \end{call}
+				\end{call}
+			\end{messcall}
+		\end{call}
+	\end{sequencediagram}
+	\caption{Execução do exemplo de Treplica em Java}
+	\label{fig:trepexecexample}
+\end{figure}
+
+\section{Replicação Usando OpenReplica}
+\label{sec:openreplica}
+
+Esta seção mostra como aplicações replicadas podem ser implementadas usando o \emph{framework} OpenReplica. Ele não foi usado no desenvolvimento prático desse trabalho, mas OpenReplica é uma forma alternativa de demonstrar o conceito de replicação ativa. A comparação da replicação em Treplica e a replicação em OpenReplica é feita quase que diretamente, devido à grande similaridade entre as interfaces desses \emph{frameworks}.
+
+OpenReplica é um \emph{framework} implementado na linguagem de programação Python, que permite o desenvolvimento de aplicações distribuídas~\cite{altinbuken2012commodifying}. Esse \emph{framework} foi projetado com base no conceito da replicação ativa. As aplicações replicadas que usam OpenReplica são separadas em duas partes; uma que gerencia o conjunto de réplicas e contém os dados que serão replicados, e as requisições que as réplicas poderão atender. E outra que acessa essas réplicas no intuito de alterar e recuperar esses dados por meio dessas requisições.
+
+Para iniciar um sistema de réplicas é necessário definir uma classe Python que contém os dados a serem replicados e a implementação de suas requisições, e em seguida iniciar uma réplica raiz que recebe conexões das demais réplicas que irão compor o conjunto de réplicas. O OpenReplica usa o algoritmo Paxos para garantir que esse conjunto se mantenha consistente e capaz de atender as requisições que virão de seus clientes.
+
+\begin{lstlisting}[language=Python, caption={Classe com dados que serão replicados e suas requisições}, label={cod:PyOpenRepClass}]
+class Counter:
+  def __init__(self, value=0):
+    self.value = value
+
+  def decrement(self):
+    self.value -= 1
+
+  def increment(self):
+    self.value += 1
+
+  def getvalue(self):
+    return self.value
+
+  def __str__(self):
+    return "The counter value is %d" % self.value
+\end{lstlisting}
+
+O Código-Fonte~\ref{cod:PyOpenRepClass} implementa a classe \srcstyle{Counter} que será replicada. Ela possui a variável \srcstyle{value}, que é o dado replicado, e os métodos \srcstyle{decrement}, \srcstyle{increment} e \srcstyle{getvalue}, que serão as requisições aceitas pelas réplicas. Para iniciar a réplica raiz de um conjunto de réplicas, basta executar o comando mostrado no Código-Fonte~\ref{cod:PyOpenRepPrimeiraRep}, nesse comando a classe \srcstyle{Counter} está implementada em um arquivo chamado \emph{counter}.
+
+\begin{lstlisting}[language=Python, caption={Comando para iniciar a primeira réplica de um conjunto de réplicas}, label={cod:PyOpenRepPrimeiraRep}]
+concoord replica -o counter.Counter -a 127.0.0.1 -p 14000
+\end{lstlisting}
+
+O comando do Código-Fonte~\ref{cod:PyOpenRepPrimeiraRep} é formado pelos parâmetros: \srcstyle{objectname (-o)}, que define qual classe será replicada; \srcstyle{addr (-a)}, que define o endereço de execução da réplica; e \srcstyle{port (-p)}, que define a porta em que a réplica receberá as requisições. Depois que a réplica raiz foi criada, as demais réplicas serão criadas usando o comando do Código-Fonte~\ref{cod:PyOpenRepProximasRep}.
+
+\begin{lstlisting}[language=Python, caption={Comando para criar novas réplicas e associar a uma outra réplica raiz}, label={cod:PyOpenRepProximasRep}]
+concoord replica 
+  -o counter.Counter -b 127.0.0.1:14000 -a 127.0.0.1 -p 14001
+\end{lstlisting}
+
+O comando que cria as réplicas que estão associadas a uma réplica raiz possui um parâmetro adicional que indica qual o endereço da réplica raiz. No Código-Fonte~\ref{cod:PyOpenRepProximasRep}, o parâmetro \srcstyle{bootstrap (-b)} indica qual o endereço da réplica raiz ao qual a nova réplica criada por esse comando será associada. Um conjunto de réplicas pode ter quantas réplicas forem necessárias, quanto mais réplicas existirem, maior será sua tolerância a falhas e sua capacidade de atender a um número maior de requisições.
+
+Os clientes que pretendem realizar requisições a esse conjunto de réplicas devem usar uma classe \srcstyle{ClientProxy} para enviar requisições que atendam a interface esperada pelas réplicas. O Código-Fonte~\ref{cod:PyOpenRepCounterInter} mostra a implementação da classe \srcstyle{Counter}, que deve ser usada no lugar da classe Counter original. Usando essa interface, programas em Python podem se conectar ao conjunto de réplicas criado e requisitar que métodos sejam executados. O método \srcstyle{invoke\_command} de ClientProxy é quem requisita às réplicas que executem um método do objeto do tipo \srcstyle{Counter} mantido por elas.
+
+O método \srcstyle{decrement} da interface faz uma chamada ao método \srcstyle{invoke\_command}. Esse método do objeto \srcstyle{proxy} faz uma requisição ao conjunto de réplicas para que elas executem o método \srcstyle{decrement} do objeto \srcstyle{Counter} que elas mantêm.
+
+As classes adaptadoras que usam \srcstyle{ClientProxy} são fortes candidatas a serem programadas com o auxílio da metaprogramação, elas são padronizadas e podem ser inferidas com base nas classes usadas para criar as réplicas. Similar às classes \srcstyle{Action} de Treplica, essas classes não possuem lógica referente à aplicação, elas são somente uma casca para a lógica implementada em outras classes da aplicação.
+
+\begin{lstlisting}[language=Python, caption={Classe \textbf{proxy} para a classe \textbf{Counter}}, label={cod:PyOpenRepCounterInter}]
+from concoord.clientproxy import ClientProxy
+
+class Counter:
+  def __init__(self,bootstrap,timeout=60,debug=False,token=None):
+    self.proxy = ClientProxy(bootstrap, timeout, debug, token)
+
+  def __concoordinit__(self, value=0):
+    return self.proxy.invoke_command('__init__', value)
+
+  def decrement(self):
+    return self.proxy.invoke_command('decrement')
+
+  def increment(self):
+    return self.proxy.invoke_command('increment')
+
+  def getvalue(self):
+    return self.proxy.invoke_command('getvalue')
+
+  def __str__(self):
+    return self.proxy.invoke_command('__str__')
+\end{lstlisting}
+
+A implementação de uma aplicação cliente é mostrada no Código-Fonte~\ref{cod:PyOpenRepCounterClient}. Ela importa a classe \srcstyle{proxy.Counter}, cria um objeto do tipo \srcstyle{Counter} que aponta para as réplicas do conjunto criado e realiza requisições para essas réplicas. Quando o conjunto de réplicas recebe essa requisição, ele se organiza para eleger qual das réplicas irá atender a ela.
+
+\begin{lstlisting}[language=Python, caption={Implementação do cliente que acessa as réplicas de \textbf{Counter}}, label={cod:PyOpenRepCounterClient}]
+>>> from concoord.proxy.counter import Counter
+>>> c = Counter("127.0.0.1:14000, 127.0.0.1:14001")
+>>> c.increment()
+>>> c.increment()
+>>> c.getvalue()
+\end{lstlisting}
+
+\section{Coesão e Acoplamento de Requisitos não Funcionais}
+\label{sec:acoplamento}
+
+Os requisitos funcionais de um programa descrevem o que deve ser realizado por ele~\cite{glinz2007non}. Esses requisitos podem ser definidos como o que o programa é capaz de fazer~\cite{glossary1990ieee}; ou como os aspectos comportamentais do sistema~\cite{anton1997goal}. No caso de uma calculadora, esses requisitos podem ser as operações matemáticas de adição e subtração. Os requisitos funcionais são normalmente associados ao domínio para qual o programa foi desenvolvido.
+
+Os requisitos não funcionais, ao contrário dos anteriores, tratam de características como desempenho, confiabilidade e segurança, entre outras~\cite{glinz2007non}. Eles podem ser definidos como os aspectos sobre o qual o sistema opera~\cite{anton1997goal}. Essas características são mais genéricas e, uma vez implementadas, podem ser reutilizadas em diversos programas. Normalmente, a replicação é enquadrada junto aos requisitos não funcionais de um programa. Não importa qual domínio use o conceito de replicação, ele permanecerá o mesmo. A implementação de uma solução de replicação pouco acoplada e coesa pode ser usada por diversos programas.
+
+As partes que compõem um programa de computador podem ser reutilizadas com menor dificuldade se respeitarem determinadas características. Essas partes devem ser coesas, elas não devem ser responsáveis por mais do que uma tarefa~\cite{eder1994coupling}. Caso uma parte do programa cuide da conexão com algum dispositivo e do desenho da interface de usuário em um monitor, ela não é uma parte coesa. O reuso da função de conexão exige que ela seja separada da função de desenho no monitor. Partes coesas são responsáveis por somente uma tarefa e podem ser reutilizadas sem adaptações.
+
+O \textit{framework} OpenReplica, mostrado na pesquisa de Deniz e Sirer~\cite{altinbuken2012commodifying}, é usado para implementar serviços confiáveis. Ele é responsável por garantir a replicação dos serviços e pode ser considerado um programa coeso, uma vez que não detêm responsabilidades diferentes da replicação. A implementação do OpenReplica é baseada na orientação a objetos e, para usar o \textit{framework} em um programa, é preciso que uma camada de interface seja desenvolvida para encapsular os métodos que contêm o comportamento replicado (Seção~\ref{sec:openreplica}). Acoplar o OpenReplica ao programa usando essas interfaces é uma característica indesejada, pois caso ele passe por alguma modificação também pode ser necessário modificar o programa que utiliza o OpenReplica.
+
+No \textit{framework} Treplica não é diferente, o acoplamento dele com a aplicação é uma característica indesejada igual ao que ocorre com as aplicações que usam OpenReplica. Os \textit{frameworks} que resolvem algum tipo de requisito não funcional provavelmente apresentaram essa mesma característica de acoplamento indesejado~\cite{eder1994coupling}.
+
+Quanto menos acopladas forem as partes do programa, melhor será para manter e reusar essas partes. O desejado é projetar programas com boa coesão e pouco acoplamento~\cite{hitz1995measuring}. As técnicas de metaprogramação podem ser uma alternativa para alcançar esse objetivo. Programas que tenham requisitos não funcionais podem ser desenvolvidos e usados com transparência se suas partes não funcionais forem projetadas usando metaprogramação. O acoplamento de um programa é considerado alto quando, para se modificar partes referentes a determinado requisito, se torna necessário alterar outras partes não relacionadas ao mesmo requisito.
+
+\subsection{Requisitos de Validação e Perda de Desempenho }
+
+As validações realizadas pelas aplicações também podem entrar na lista de seus requisitos não funcionais. Os programas que executam alguma forma de validação podem usar de metaprogramação para realizar essa atividade de verificação. Chlipala~\cite{chlipala2013bedrock} mostra como é possível verificar o código fonte em tempo de compilação usando macros, mantendo suas partes pouco acopladas a essa verificação. Ele verifica o código fonte somente na compilação, mantendo o desempenho do programa durante a execução, uma vez que a execução não está sobrecarregada com verificações. 
+
+Na pesquisa realizada por Mekruksavanich et al.~\cite{mekruksavanich2012analytical} também foi usada metaprogramação para detectar defeitos em programas. Para isso foram criados componentes que são capazes de descrever e identificar defeitos nesses programas. Não é diferente o trabalho de Blewitt et al.~\cite{blewitt2005automatic}, que faz uso de técnicas de metaprogramação para validar programas de computador buscando inconsistências. 
+
+A execução de uma aplicação pode ter sua velocidade prejudicada por estar sobrecarregada de validações. Quanto mais etapas de validação acontecerem antes da execução da aplicação, menos sua performance será impactada. Em linguagens compiladas, determinadas validações podem ser movidas para dentro da compilação reduzindo o tempo consumido durante a execução dessas aplicações. Validações a respeito das entradas e saídas de um programa podem ser feitas somente sobre as características das entradas e saídas, não é possível em compilação inferir validações a respeito de seu conteúdo, uma vez que ele só existe durante a execução da aplicação.
+
+Refraseando a introdução, essa pesquisa mostra como os requisitos não funcionais de replicação podem ser implementados usando metaprogramação para produzir programas coesos e pouco acoplados. Também é discutida a validação desses programas, no intuito de garantir que o desenvolvimento destes requisitos respeitem as regras necessárias à replicação.
+

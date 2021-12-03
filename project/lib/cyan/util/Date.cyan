@@ -1,0 +1,10 @@
+package cyan.util
+
+object Date(Int month, Int day, Int year)
+
+    override
+    func asString -> String {
+        ^ "date($month, $day, $year)";
+    }
+end
+

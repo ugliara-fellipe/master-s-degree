@@ -1,0 +1,17 @@
+package cyan.lang
+
+
+public final object ExceptionMethodNotFound extends CyException
+
+    func init {
+    }
+    
+    func init: String _message { 
+        self._message = _message
+    }
+    
+    func message -> String = _message;
+    
+    String _message = ""
+end
+

@@ -1,0 +1,28 @@
+package cyan.lang
+
+object IntervalIterator<T> implements Iterator<T>
+
+    func init: Interval<T> s {
+        self.s = s;
+        index = s first;
+    }
+    
+    override
+    func hasNext -> Boolean {
+        return index <= (s last);
+    }
+    
+    override
+    func next -> T {
+        if  index <= (s last) {
+            ++index;
+            return index pred; //T cast: ((Int cast: index) - 1);
+        }
+        else {
+            throw: ExceptionIterator;
+        }
+    }
+    
+    Interval<T> s
+    var T index
+end

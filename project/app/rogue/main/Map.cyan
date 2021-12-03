@@ -1,0 +1,175 @@
+package main
+
+object Map
+  
+  var Array< Array< MapTuple > > map
+
+  func init {
+    self.map = Array< Array< MapTuple > > new;
+  }
+  
+  func build {
+    for r in 0..< (Const ROW_SIZE) {
+      var Array< MapTuple > row = Array< MapTuple > new;
+      for c in 0..< (Const COLUMN_SIZE) {
+        //var Tile tile = Tile new;
+        var MapTuple tuple = MapTuple new: Tile new, Nil;
+        row add: tuple;
+      }
+      self.map add: row;
+    }
+    
+    villageBuild;
+  }
+  
+  func getTile: Int row, Int column -> Tile {
+    return self.map[row][column] getTile;
+  }
+  
+  func getFigure: Int row, Int column -> Figure {
+    return (Cast<Figure> asReceiver: (self.map[row][column] getFigure));
+  }
+  
+  func setFigure: Int row, Int column, Figure|Nil figure {
+    self.map[row][column] setFigure: figure;
+  }
+  
+  func draw {
+    for r in 0..< (Const ROW_SIZE) {
+      MapCanvas write: "|";
+      for c in 0..< (Const COLUMN_SIZE) {
+        var MapTuple tuple = map[r][c];
+        if tuple getFigure == Nil  {
+          (tuple getTile) draw;
+        }
+        else {
+          (Cast<Figure> asReceiver: (tuple getFigure)) draw;
+        }
+      }
+      MapCanvas write: "|\n";
+    }
+  }
+  
+  func villageBuild {
+    map[20][14] getTile setType: Const OBSTACLE;
+    (map[20][15] getTile) setType: Const OBSTACLE;
+    (map[20][16] getTile) setType: Const OBSTACLE;
+    (map[20][17] getTile) setType: Const OBSTACLE;
+    (map[20][18] getTile) setType: Const OBSTACLE;
+    (map[20][19] getTile) setType: Const OBSTACLE;
+    (map[20][20] getTile) setType: Const OBSTACLE;
+    (map[20][21] getTile) setType: Const OBSTACLE;
+    (map[20][22] getTile) setType: Const OBSTACLE;
+    (map[20][23] getTile) setType: Const OBSTACLE;
+    (map[20][24] getTile) setType: Const OBSTACLE;
+    (map[20][25] getTile) setType: Const OBSTACLE;
+    (map[20][26] getTile) setType: Const OBSTACLE;
+    
+    (map[19][26] getTile) setType: Const OBSTACLE;
+    (map[18][26] getTile) setType: Const OBSTACLE;
+    (map[17][26] getTile) setType: Const OBSTACLE;
+    (map[14][26] getTile) setType: Const OBSTACLE;
+    (map[13][26] getTile) setType: Const OBSTACLE;
+    
+    (map[19][14] getTile) setType: Const OBSTACLE;
+    (map[18][14] getTile) setType: Const OBSTACLE;
+    (map[17][14] getTile) setType: Const OBSTACLE;
+    (map[16][14] getTile) setType: Const OBSTACLE;
+    (map[15][14] getTile) setType: Const OBSTACLE;
+    (map[14][14] getTile) setType: Const OBSTACLE;
+    (map[13][14] getTile) setType: Const OBSTACLE;
+    
+    (map[12][14] getTile) setType: Const OBSTACLE;
+    (map[12][15] getTile) setType: Const OBSTACLE;
+    (map[12][16] getTile) setType: Const OBSTACLE;
+    (map[12][17] getTile) setType: Const OBSTACLE;
+    (map[12][18] getTile) setType: Const OBSTACLE;
+    (map[12][19] getTile) setType: Const OBSTACLE;
+    (map[12][20] getTile) setType: Const OBSTACLE;
+    (map[12][21] getTile) setType: Const OBSTACLE;
+    (map[12][22] getTile) setType: Const OBSTACLE;
+    (map[12][23] getTile) setType: Const OBSTACLE;
+    (map[12][24] getTile) setType: Const OBSTACLE;
+    (map[12][25] getTile) setType: Const OBSTACLE;
+    (map[12][26] getTile) setType: Const OBSTACLE;
+    
+    (map[10][43] getTile) setType: Const OBSTACLE;
+    (map[10][44] getTile) setType: Const OBSTACLE;
+    (map[10][45] getTile) setType: Const OBSTACLE;
+    (map[10][46] getTile) setType: Const OBSTACLE;
+    (map[10][47] getTile) setType: Const OBSTACLE;
+    (map[10][48] getTile) setType: Const OBSTACLE;
+    (map[10][49] getTile) setType: Const OBSTACLE;
+    (map[10][50] getTile) setType: Const OBSTACLE;
+    (map[10][51] getTile) setType: Const OBSTACLE;
+    (map[10][52] getTile) setType: Const OBSTACLE;
+    (map[10][53] getTile) setType: Const OBSTACLE;
+    (map[10][54] getTile) setType: Const OBSTACLE;
+    (map[10][55] getTile) setType: Const OBSTACLE;
+    (map[10][56] getTile) setType: Const OBSTACLE;
+    (map[10][57] getTile) setType: Const OBSTACLE;
+    (map[10][58] getTile) setType: Const OBSTACLE;
+    (map[10][59] getTile) setType: Const OBSTACLE;
+    (map[10][60] getTile) setType: Const OBSTACLE;
+    (map[10][61] getTile) setType: Const OBSTACLE;
+    (map[10][62] getTile) setType: Const OBSTACLE;
+    
+    (map[11][43] getTile) setType: Const OBSTACLE;
+    (map[12][43] getTile) setType: Const OBSTACLE;
+    (map[13][43] getTile) setType: Const OBSTACLE;
+    (map[14][43] getTile) setType: Const OBSTACLE;
+    
+    (map[11][62] getTile) setType: Const OBSTACLE;
+    (map[12][62] getTile) setType: Const OBSTACLE;
+    (map[13][62] getTile) setType: Const OBSTACLE;
+    (map[14][62] getTile) setType: Const OBSTACLE;
+    
+    (map[15][43] getTile) setType: Const OBSTACLE;
+    (map[15][44] getTile) setType: Const OBSTACLE;
+    (map[15][45] getTile) setType: Const OBSTACLE;
+    (map[15][46] getTile) setType: Const OBSTACLE;
+    (map[15][47] getTile) setType: Const OBSTACLE;
+    (map[15][54] getTile) setType: Const OBSTACLE;
+    (map[15][55] getTile) setType: Const OBSTACLE;
+    (map[15][56] getTile) setType: Const OBSTACLE;
+    (map[15][57] getTile) setType: Const OBSTACLE;
+    (map[15][58] getTile) setType: Const OBSTACLE;
+    (map[15][59] getTile) setType: Const OBSTACLE;
+    (map[15][60] getTile) setType: Const OBSTACLE;
+    (map[15][61] getTile) setType: Const OBSTACLE;
+    (map[15][62] getTile) setType: Const OBSTACLE;
+   
+    (map[25][36] getTile) setType: Const OBSTACLE;
+    (map[25][37] getTile) setType: Const OBSTACLE;
+    (map[25][38] getTile) setType: Const OBSTACLE;
+    (map[25][39] getTile) setType: Const OBSTACLE;
+    (map[25][40] getTile) setType: Const OBSTACLE;
+    (map[25][41] getTile) setType: Const OBSTACLE;
+    (map[25][42] getTile) setType: Const OBSTACLE;
+    (map[25][43] getTile) setType: Const OBSTACLE;
+    (map[25][44] getTile) setType: Const OBSTACLE;
+    (map[25][45] getTile) setType: Const OBSTACLE;
+    (map[25][46] getTile) setType: Const OBSTACLE;
+    (map[25][47] getTile) setType: Const OBSTACLE;
+    (map[25][54] getTile) setType: Const OBSTACLE;
+    (map[25][55] getTile) setType: Const OBSTACLE;
+    (map[25][56] getTile) setType: Const OBSTACLE;
+    (map[25][57] getTile) setType: Const OBSTACLE;
+    
+    (map[29][40] getTile) setType: Const OBSTACLE;
+    (map[4][13] getTile) setType: Const OBSTACLE;
+    (map[32][15] getTile) setType: Const OBSTACLE;
+    (map[17][60] getTile) setType: Const OBSTACLE;
+    (map[23][40] getTile) setType: Const OBSTACLE;
+    (map[5][55] getTile) setType: Const OBSTACLE;
+    (map[8][71] getTile) setType: Const OBSTACLE;
+    (map[3][20] getTile) setType: Const OBSTACLE;
+    (map[3][63] getTile) setType: Const OBSTACLE;
+    (map[4][52] getTile) setType: Const OBSTACLE;
+    (map[21][60] getTile) setType: Const OBSTACLE;
+    (map[24][47] getTile) setType: Const OBSTACLE;
+    (map[19][54] getTile) setType: Const OBSTACLE;
+    (map[17][55] getTile) setType: Const OBSTACLE; 
+  }
+  
+end

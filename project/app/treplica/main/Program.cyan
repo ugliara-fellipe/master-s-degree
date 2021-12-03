@@ -1,0 +1,22 @@
+package main
+
+import treplica
+
+object Program    
+
+    func init { 
+      Out println: "Program Init";
+    }
+    
+    func run: Array<String> args {
+        var data = Number new;
+        var treplica = Treplica new;
+        treplica runMachine: data numberProcess: 2 rtt: 200 path: "/var/tmp/magic" ++ args[1];      
+
+        while true {  
+          var action = Update new: args[2];
+          treplica execute: action;
+        }
+    }    
+
+end

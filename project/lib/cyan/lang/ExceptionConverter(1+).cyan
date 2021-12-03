@@ -1,0 +1,5 @@
+package cyan.lang
+
+object ExceptionConverter<T+>
+    @createExceptionConverter
+end

@@ -1,0 +1,11 @@
+package cyan.math
+
+object Sqr extends Function<Double, Double>
+
+    override
+    func eval: Double x -> Double {
+        return x * x;
+    }
+
+end
+

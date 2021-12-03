@@ -1,0 +1,14 @@
+package cyan.lang
+
+
+object FilterRegExpr extends Filter<String>
+    func init: String regExprStr {
+        self.regExpr = RegExpr(regExprStr)
+    }
+    override
+    func eval: String elem -> Boolean {
+        ^ regExpr ~= elem
+    }
+    
+    RegExpr regExpr
+end

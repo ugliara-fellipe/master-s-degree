@@ -1,0 +1,14 @@
+# how run a project
+# test in ubuntu
+
+sh deps.sh
+
+sh config.sh
+
+sh build.sh <name of project>
+# example
+# sh build.sh calculator
+
+sh run.sh <name of project> <replica index>
+# sh run.sh calculator 1
+# sh run.sh calculator 2

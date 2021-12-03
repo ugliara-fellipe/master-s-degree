@@ -1,0 +1,6 @@
+package cyan.lang
+
+interface Iterator<T>
+    func hasNext -> Boolean
+    func next -> T
+end

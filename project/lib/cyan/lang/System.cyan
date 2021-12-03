@@ -1,0 +1,173 @@
+package cyan.lang
+
+@javacode{*
+import java.io.File;
+*}
+
+object System
+
+    func init {
+        mapGlobalVariables = HashMap<String, Dyn>();
+    }
+
+    public func exit { 
+        @javacode<<< 
+            System.exit(0);
+        >>>    
+        return Nil
+    }
+       // ends the program with a return value
+    public func exit: (Int errorCode) { 
+        @javacode<<< 
+            System.exit(_errorCode.n);
+        >>>    
+        return Nil
+    }
+       // runs the garbage collector
+    public func gc { 
+        @javacode<*<
+           System.gc();
+        >*>
+        return Nil
+    }
+       // current time in milliseconds
+    public func currentTime -> Long { 
+        @javacode<*<
+            return new CyLong(System.currentTimeMillis());
+        >*>    
+    }
+       // prints the stack of called methods in the
+       // standard output
+    public func printMethodStack {  
+        @javacode<**
+            StackTraceElement[] elements = Thread.currentThread().getStackTrace();
+
+            for( int i = 0; i < elements.length; i++) {
+                System.out.println( elements[i] );
+            }
+        **>
+        return Nil
+    }
+
+    overload    
+    func exec: String command {
+        var Int errorCode = 0;
+        @javacode{*
+        
+            try {
+                Runtime.getRuntime().exec( _command.s );
+            }
+            catch ( Throwable e ) {
+                throw new ExceptionContainer__( new _ExceptionJavaException(e) );
+            }
+            /*
+            catch ( SecurityException e ) {
+                _errorCode.n = 1;
+            }
+            catch ( IOException e ) {
+                _errorCode.n = 2;
+            }
+            catch ( NullPointerException e ) {
+                _errorCode.n = 3;
+            }
+            catch ( IllegalArgumentException e ) {
+                _errorCode.n = 4;
+            }
+            */
+        *}
+        return Nil; // It will return Process some day
+    }
+    
+    func exec: Array<String> commandList {
+        @javacode{*
+            String []cmdArray = new String[_commandList._size().n];
+            int i = 0;
+        *}
+        for command in commandList {
+            @javacode{*
+                cmdArray[i] = _command.s;
+                ++i;
+            *}
+        }
+        @javacode{*
+            try {
+                Runtime.getRuntime().exec( cmdArray );
+            }
+            catch ( Throwable e ) {
+                throw new ExceptionContainer__( new _ExceptionJavaException(e) );
+            }
+            
+        *}
+        
+        return Nil; // It will return Process some day
+    }
+    
+    func exec: Array<String> commandList, Array<String> envpList, String dir {
+        @javacode{*
+            String []cmdArray = new String[_commandList._size().n];
+            int i = 0;
+            String []envpArray = new String[_envpList._size().n];
+        *}
+        for command in commandList {
+            @javacode{*
+                cmdArray[i] = _command.s;
+                ++i;
+            *}
+        }
+        @javacode{*
+            i = 0;
+        *}
+        for envp in envpList {
+            @javacode{*
+                envpArray[i] = _envp.s;
+                ++i;
+            *}
+        }
+        @javacode{*
+            try {
+                Runtime.getRuntime().exec( cmdArray, envpArray, new File(_dir.s) );
+            }
+            catch ( Throwable e ) {
+                throw new ExceptionContainer__( new _ExceptionJavaException(e) );
+            }
+            
+        *}
+        
+        return Nil; // It will return Process some day
+    }
+    
+    
+    @doc{*
+        this method can be used as a dynamic storage for global variables
+    *}
+    func globalTable -> IMap<String, Dyn> = mapGlobalVariables;
+    
+    
+    let IMap<String, Dyn> mapGlobalVariables
+    /*
+       numMethodReturned is the number of the method that owns the 'return'
+       statement that was executed.
+       currentNumMethod is the number of method being executed in the stack 
+       of called methods. Each method keeps, in a local variable numThisMethod, 
+       its number. 'numThisMethod = currentMethodNumber++;' is the first 
+       statement of each method. returnedValue is the value returned by a 
+       return statement of a function call. 
+    */
+    
+    @javacode{**
+        static public int numMethodToReturn = -1;
+        static public int currentNumMethod = 0;
+        static public Object returnedValue = null;
+        public void error(String message) {
+            System.out.println(message);
+            System.exit(1);
+        }
+        
+        public java.util.Stack<String> checkStack = new java.util.Stack<>();
+        
+    **}
+    
+    
+    
+end
+

@@ -1,0 +1,5 @@
+package cyan.lang
+
+interface IHas<T>
+    func has: T -> Boolean 
+end

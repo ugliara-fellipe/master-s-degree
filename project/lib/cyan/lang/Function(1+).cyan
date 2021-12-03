@@ -1,0 +1,5 @@
+package cyan.lang
+
+abstract object Function<R+>
+    @createFunction 
+end

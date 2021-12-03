@@ -1,0 +1,5 @@
+package cyan.lang
+
+object CatchIgnore<T+>
+    @createCatchIgnore
+end

@@ -1,0 +1,42 @@
+package cyan.lang
+
+object Nil
+
+    func prototypeName -> String = "Nil";
+    
+    func asString -> String = "Nil";
+    
+    func asString: (Int ident) -> String {
+        var String s = "";
+        1..ident foreach: { (: Int ch :)
+            s = s ++ " "
+        };
+        return s ++ "Nil"
+    }
+
+    func print { Out print: "Nil" }
+
+    func println { print; Out println: "\n" }
+    
+    
+    func == (Dyn other)  -> Boolean { 
+        @javacode{*
+            return new CyBoolean(_other == this) ; 
+        *}
+    }
+
+    func === (Dyn other)  -> Boolean { 
+        @javacode{*
+            return new CyBoolean(_other == this) ; 
+        *}
+    }
+    
+    func != (Dyn other)  -> Boolean { 
+        @javacode{*
+            return new CyBoolean(_other != this) ; 
+        *}
+    }
+    
+    
+end
+

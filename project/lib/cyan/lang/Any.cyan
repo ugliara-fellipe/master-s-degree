@@ -1,0 +1,320 @@
+package cyan.lang
+
+//@javaImplements(_IAny)
+object Any
+
+    
+    func eq:  (Dyn other) -> Boolean { 
+         @javacode<*< 
+               return new CyBoolean(_other == this);
+          >*>
+    }
+    func neq: (Dyn other) -> Boolean { 
+         @javacode<*< 
+               return new CyBoolean(_other != this);
+          >*>
+    }
+    
+
+    func prototype -> Any { ^self }
+    
+    
+    
+    final func prototypeName -> String { 
+        @javacode<<*
+            return new CyString( getPrototypeName() );
+        *>>
+    }
+    
+    /*
+        return the parent prototype of the prototype of the receiver. 
+        When the receiver is Any, Any itself is returned.
+    */
+    final func prototypeParent -> Any { @javacode<<<< return  parent(); >>>> }
+    
+    final func prototypePackageName -> String { @javacode{* return prototypePackage(); *} }
+    
+    final func isInterface -> Boolean { 
+        @javacode<<< 
+            return new CyBoolean(isInterface());
+        >>>
+    }
+    
+    @checkIsA
+    final func isA: (Any proto) -> Boolean { 
+        @javacode<*<
+            Object elem = getUnionElem();
+            if ( elem != null ) {
+                if ( elem instanceof _Any ) 
+                    return ((_Any ) elem)._isA_1(_proto);
+            }
+        >*>
+        var Any current = self prototype;
+        while true {
+            if current eq: proto {
+                return true
+            }
+            else {
+                if current eq: Any { break }
+                current = current prototypeParent;
+            }
+        }
+        return false;
+    }
+    
+    final func throw: (CyException e) -> Dyn {
+        @javacode<<<
+        throw new ExceptionContainer__(_e);
+        >>>
+    }
+
+    
+    func clone -> Any { ^self }
+
+    
+    final
+    func ++ (Any other) -> String { 
+        @javacode<<< return new CyString(this._asString().s + _other._asString().s); >>> 
+    }
+    
+    func asString -> String = asString: 0;
+    
+    func asString: (Int ident) -> String {
+        @javacode<<<<
+        return new CyString(asString(_ident.n));
+        >>>>
+    }
+    // only the instance variables of this object, without the super-prototype ones
+    func asStringThisOnly: Int ident -> String {
+        @javacode<<<<
+        return new CyString(asStringThisOnly(_ident.n));
+        >>>>
+    }
+    
+    
+    
+    func asStringQuoteIfString -> String = asString;
+    
+    
+    func == (Dyn other) -> Boolean { 
+        @javacode<<< 
+            if ( getUnionElem() != null ) {
+                Object anyThis = (this.getUnionElem() != null) ? getUnionElem() : this;
+                Object anyOther = (_other instanceof _Any) ?
+                    (( ((_Any ) _other).getUnionElem() != null ) ? ((_Any ) _other).getUnionElem() 
+                       : _other ) : _other;
+                if ( anyThis == _Nil.prototype || anyOther == _Nil.prototype ) {
+                    return new CyBoolean( anyThis == anyOther );
+                }
+                else {
+                    _Any realAnyThis = (_Any ) anyThis;
+                    _Any realAnyOther = (_Any ) anyOther;
+                    return realAnyThis._equal_equal(realAnyOther) ;
+                }
+            }
+            else {
+                if ( _other instanceof _Any ) {
+                    if ( ( ((_Any ) _other).getUnionElem() != null ) ) {
+                        return this._equal_equal( ((_Any ) _other).getUnionElem() );
+                    }
+                    else {
+                        return new CyBoolean( this == _other );
+                    }
+                }
+                else {
+                    return new CyBoolean(false); 
+                }
+            }
+        >>> 
+    }
+    
+    func === (Dyn other) -> Boolean { 
+        return self == other 
+    }
+
+    func != (Dyn other) -> Boolean { 
+        return !(self == other);
+        /*
+        @javacode<<< 
+            if ( _other instanceof _Any ) {
+                if ( ((_Any ) _other).getUnionElem() == null ) 
+                    return new CyBoolean(this != _other); 
+                else 
+                    return this._exclamation_equal( ((_Any ) _other).getUnionElem() ); 
+            }
+            else
+                return new CyBoolean(true);
+        >>> 
+        */
+    }
+
+    func isCase: (Any other) -> Boolean { ^self == other }
+    
+    func assertxx: (Boolean expr) { 
+        if ! expr  {
+            throw: ExceptionAssert()
+        }
+    }
+    func assertxx: Boolean expr, String message {
+        if ! expr {
+            message println;
+            throw: ExceptionAssert();
+        }
+    }
+
+    func print { Out print: (self asString) }
+    
+    func println { print; Out print: "\n" }
+    
+
+    @prototypeCallOnly
+    func toAny: Dyn elem -> Any = elem;
+    
+    final
+    func featureList -> Array<Tuple<key, String, value, Any>> { 
+        @javacode<<<
+            return _getFeatureListNameDoesNotCollide____();
+        >>>
+    }
+
+    // return the list of features of instance variable
+    // or method whose name is 'slotName'
+    final
+    func featureList: (String slotName) -> Array<Tuple<key, String, value, Any>> { 
+        var Array<Tuple<key, String, value, Any>> ret = Array<Tuple<key, String, value, Any>> new;
+        var Array<Tuple<slotName, String, key, String, value, Any>> anArray = slotFeatureList;
+        anArray foreach: { (: Tuple<slotName, String, key, String, value, Any> elem :)
+            if slotName == elem slotName {
+                ret add: (Tuple<key, String, value, Any> new: (elem key), (elem value));
+            }
+        };
+        return ret;
+    }
+
+    // return the list of features of all instance variables and methods
+    final
+    func slotFeatureList -> Array<Tuple<slotName, String, key, String, value, Any>> { 
+        @javacode<<<
+            return _getSlotFeatureListNameDoesNotCollide____();
+        >>>
+    }
+
+
+    final
+    func annotList -> Array<Any> { 
+        var Array<Any> anyList;
+        @javacode{*  _anyList = _getAnnotListNameDoesNotCollide____(); *}
+        return anyList;
+    }
+
+        
+    final
+    func annotList: (String slotName) -> Array<Any> { 
+        var anyList = Array<Any> new;
+        (featureList: slotName) foreach: { (: Tuple<key, String, value, Any> elem :)
+            if elem key == "annot" { anyList add:  elem value; }
+        };
+        return anyList;    
+    }
+    
+
+    /*
+       this method is called if a message is sent to the object and the method
+       is not found. 'methodName' is, obviously the method name. 'args' contains
+       the message parameters. args[i] is an array with the real parameters of the
+       i-th selector. So in a message send
+             dyn with: 0, 'a' print: f0, 100, "A";
+       args would be
+           [ [ 0, 'a' ], [ f0, 100, "A" ] ] 
+       This is not a valid Cyan literal array because of type errors. But you 
+       got the idea. 
+    */
+    func doesNotUnderstand: (String methodName, Array<Array<Dyn>> args) -> Dyn {
+        throw: ExceptionDoesNotUnderstand(methodName)
+    }
+
+    
+    @changeFunctionForMethod
+    final func functionForMethod: String signature -> Any {
+        // this can only be called through reflection
+        throw: ExceptionStr("Method 'functionForMethod' should not be called using reflection, Dyn, or using ?functionForMethod");
+    }
+
+    @changeFunctionForMethod
+    final func functionForMethodWithSelf: String signature -> Any {
+        // this can only be called through reflection
+        throw: ExceptionStr("Method 'functionForMethodWithSelf' should not be called using reflection, Dyn, or using ?functionForMethodWithSelf");
+    }
+
+
+
+    func hashCode -> Int { 
+        @javacode<<<
+            return new CyInt(System.identityHashCode(this));
+        >>>
+    }
+
+    func isUnion -> Boolean {
+        @javacode{*
+            return getUnionElem() != null ? CyBoolean.cyTrue : CyBoolean.cyFalse;
+        *}
+    }
+
+    @javacode<*<
+       protected static final int defaultIdentNumber__ = 4;
+       public Object getUnionElem() { return null; }
+       public boolean eq(Object other) { return this == other; }
+
+       protected String getWhiteSpaces(int n) {
+            String s = "";
+            for (int i = 0; i < n; ++i)
+                s = s + "";
+            return s;
+       }
+
+       @Override 
+       public int hashCode() {
+           return this._hashCode().n;            
+       }
+
+        public boolean  equals( Object _other )  {
+            return _equal_equal(_other).b;
+        } 
+         
+    >*>
+
+
+
+    
+    /***********************
+        method that have not been implemented. Probably never will 
+        because the JVM does not support them directly. 
+     ***********************
+    
+    
+    @checkSetMethod
+    final func setMethod: (String signature, Any method) {
+    }
+    
+    @checkAddMethod
+    @grammarMethod{*
+    
+          (  addMethod:
+                 (selector: String ( param: (Any)+ )?
+                   )+
+                  (returnType: Any)?
+                  body: Any    
+           )
+    *}
+    func addMethod: Tuple<Any, 
+                          Array<  
+                             Tuple<String, Union<some, Array<Any>, none, Any>>
+                              >, 
+                          Union<some, Any, none, Any>, 
+                          Any> t { 
+    }
+    */
+    
+
+end
+

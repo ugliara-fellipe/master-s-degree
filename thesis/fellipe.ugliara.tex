@@ -1,0 +1,414 @@
+% ------------------------------------------------------------------------
+% ------------------------------------------------------------------------
+% abnTeX2: Modelo de Trabalho Academico (tese de doutorado, dissertacao de
+% mestrado e trabalhos monograficos em geral) em conformidade com 
+% ABNT NBR 14724:2011: Informacao e documentacao - Trabalhos academicos -
+% Apresentacao
+% ------------------------------------------------------------------------
+% ------------------------------------------------------------------------
+
+% ------------------------------------------------------------------------
+% ------------------------------------------------------------------------
+% abnTeX2: Modelo de Trabalho Academico (tese de doutorado, dissertacao de
+% mestrado e trabalhos monograficos em geral) em conformidade com 
+% ABNT NBR 14724:2011: Informacao e documentacao - Trabalhos academicos -
+% Apresentacao
+% ------------------------------------------------------------------------
+% ------------------------------------------------------------------------
+
+\documentclass[
+	% -- opções da classe memoir --
+	12pt,				% tamanho da fonte
+	openright,			% capítulos começam em pág ímpar (insere página vazia caso preciso)
+	twoside,			% para impressão em verso e anverso. Oposto a oneside
+	a4paper,			% tamanho do papel. 
+	% -- opções da classe abntex2 --
+	%chapter=TITLE,		% títulos de capítulos convertidos em letras maiúsculas
+	%section=TITLE,		% títulos de seções convertidos em letras maiúsculas
+	%subsection=TITLE,	% títulos de subseções convertidos em letras maiúsculas
+	%subsubsection=TITLE,% títulos de subsubseções convertidos em letras maiúsculas
+	% -- opções do pacote babel --
+	english,			% idioma adicional para hifenização
+	french,				% idioma adicional para hifenização
+	spanish,			% idioma adicional para hifenização
+	brazil				% o último idioma é o principal do documento
+	]{abntex2}
+
+	% ---
+	% Pacotes básicos 
+	% ---
+	\usepackage{lmodern}			% Usa a fonte Latin Modern			
+	\usepackage[T1]{fontenc}		% Selecao de codigos de fonte.
+	\usepackage[utf8]{inputenc}		% Codificacao do documento (conversão automática dos acentos)
+	\usepackage{lastpage}			% Usado pela Ficha catalográfica
+	\usepackage{indentfirst}		% Indenta o primeiro parágrafo de cada seção.
+	\usepackage{color}				% Controle das cores
+	\usepackage{graphicx}			% Inclusão de gráficos
+	\usepackage{microtype} 			% para melhorias de justificação
+	\usepackage{epsfig,psfrag,amsmath,tabularx} % para figuras eps e simbolos matematicos
+% ---
+
+\usepackage{backnaur}
+\usepackage{chngcntr}
+\usepackage{pgf}
+\usepackage{tikz}
+\usetikzlibrary{arrows, automata, shapes}
+\usetikzlibrary{positioning}
+\usetikzlibrary{arrows.meta}
+\tikzset{>={Latex[width=3mm,length=3mm]}}
+\usepackage{makecell}
+\usetikzlibrary{calc}
+
+\usepackage[final]{pdfpages}
+\usepackage{pgf-umlsd}
+% -----------------
+% Configurações adicionais
+
+\usepackage{float}
+
+\newcommand{\srcstyle}[1]{\ttfamily\textbf{#1}\rmfamily}
+
+\newcommand{\mychaptermark}[1]{
+	\markboth{#1}{}}
+
+\usepackage{xcolor}
+\definecolor{black}{RGB}{0,0,0}
+\newcommand{\verify}[1]{\textcolor{red}{#1}}
+
+\newlength{\MaxSizeOfLineNumbers}%
+\settowidth{\MaxSizeOfLineNumbers}{99}% Adjust to maximum number of lines
+\addtolength{\MaxSizeOfLineNumbers}{1ex}%
+% Configurando layout para mostrar codigos Java
+
+\usepackage{listings}
+\lstset{
+	language=Java,
+	keywordstyle=\color{black},
+	stringstyle=\color{black},
+	commentstyle=\color{black},
+	morecomment=[s][\color{black}]{/**}{*/},
+	extendedchars=true,
+	showspaces=false,
+	showstringspaces=false,
+	numbers=left,
+	numberstyle=\tiny,
+	breaklines=true,
+	backgroundcolor=\color{white},
+	breakautoindent=true,
+	captionpos=b,
+	xleftmargin=\MaxSizeOfLineNumbers,
+	tabsize=2,
+	frame=single,
+	basicstyle=\linespread{0.8}\fontsize{10}{\baselineskip}\selectfont\ttfamily,
+	framexleftmargin=0pt,
+	framexrightmargin=-4pt,
+	framextopmargin=2pt,
+	framexbottommargin=2pt,
+	aboveskip=25pt,
+	abovecaptionskip=15pt,
+	belowskip=15pt
+}
+
+\usepackage[utf8]{inputenc}
+%\usepackage{graphicx}
+
+\setlength{\FrameSep}{1pt}
+
+% corrige paragrafo que termina com linha com uma palavra 
+\setlength\parfillskip{0pt plus .75\textwidth}
+\setlength\emergencystretch{1pt}
+
+\usepackage{amsmath,mathpazo}
+
+%------------------
+\usepackage{etoolbox}
+\makeatletter
+%\patchcmd{\@caption}{\csname the#1\endcsname}{\csname fnum@#1\endcsname:}{}{}
+\renewcommand*\l@figure{\@dottedtocline{1}{1.5em}{2.5em}} % default for 3rd arg: 2.3em
+%\let\l@table\l@figure % as in article.cls
+\makeatother
+% ---
+% Pacotes de citações
+% ---
+\usepackage[brazilian,hyperpageref]{backref}	 % Paginas com as citações na bibl
+\usepackage[alf]{abntex2cite}					 % Citações padrão ABNT
+
+% --- 
+% CONFIGURAÇÕES DE PACOTES 
+% --- 
+
+% ---
+% Configuracoes do pacote backref
+% Usado sem a opcao hyperpageref de backref
+\renewcommand{\backrefpagesname}{Citado na(s) página(s):~}
+% Texto padrao antes do numero das paginas
+\renewcommand{\backref}{}
+% Define os textos da citacao
+\renewcommand*{\backrefalt}[4]{
+	\ifcase #1 %
+		Nenhuma citação no texto.%
+	\or
+		Citado na página #2.%
+	\else
+		Citado #1 vezes nas páginas #2.%
+	\fi}%
+% ---
+
+% ---
+% Pacotes definidos pelo autor
+% ---
+\input{macros}		% arquivo com possiveis macros definidas pelo autor
+% ---
+
+% ---
+% Informacoes de dados para CAPA e FOLHA DE ROSTO
+% ---
+\titulo{Replicação Orientada a Metaprogramação} % Replicação Metaprogramada
+\autor{Fellipe Augusto Ugliara}
+\local{Sorocaba, SP}
+\data{12 de Junho de 2018}
+\orientador{Prof. Dr. José de Oliveira Guimarães}
+\coorientador{Prof. Dr. Gustavo Maciel Dias Vieira}
+\instituicao{%
+  Universidade Federal de São Carlos -- UFSCar
+  \par
+  Centro de Ciências em Gestão e Tecnologia -- CCGT
+  \par
+  Programa de Pós-Graduação em Ciência da Computação -- PPGCC-So}
+\tipotrabalho{Dissertação (Mestrado)}
+% O preambulo deve conter o tipo do trabalho, o objetivo, 
+% o nome da instituicao e a Area de concentracao 
+\preambulo{Dissertação de mestrado apresentada ao Programa de Pós-Graduação em Ciência da Computação (PPGCC-So) da Universidade Federal de São Carlos como parte dos requisitos exigidos para a obtenção do título de Mestre em Ciência da Computação. Linha de pesquisa: Computação Científica e Inteligência Computacional.}
+% ---
+
+% ---
+% Configuracoes de aparencia do PDF final
+
+% alterando o aspecto da cor azul
+\definecolor{blue}{RGB}{41,5,195}
+
+% informacoes do PDF
+\makeatletter
+\hypersetup{
+     	%pagebackref=true,
+		pdftitle={\@title}, 
+		pdfauthor={\@author},
+    	pdfsubject={\imprimirpreambulo},
+	    pdfcreator={LaTeX with abnTeX2},
+		pdfkeywords={abnt}{latex}{abntex}{abntex2}{trabalho acadêmico}, 
+		colorlinks=true,       		% false: boxed links; true: colored links
+    	linkcolor=blue,          	% color of internal links
+    	citecolor=blue,        		% color of links to bibliography
+    	filecolor=magenta,      		% color of file links
+		urlcolor=blue,
+        bookmarksdepth=4
+}
+\makeatother
+% --- 
+
+% --- 
+% Espacamentos entre linhas e paragrafos 
+% --- 
+
+% O tamanho do paragrafo é dado por:
+\setlength{\parindent}{1.3cm}
+
+% Controle do espaçamento entre um parágrafo e outro:
+\setlength{\parskip}{0.2cm}  % tente também \onelineskip
+
+% ---
+% compila o indice
+% ---
+\makeindex
+% ---
+
+% ----
+% Inicio da dissertacao
+% ----
+\begin{document}
+
+% Retira espaco extra obsoleto entre as frases.
+\frenchspacing
+
+
+% ----------------------------------------------------------
+% ELEMENTOS PRE-TEXTUAIS
+% ----------------------------------------------------------
+% \pretextual
+
+% ---
+% Capa
+% ---
+\imprimircapa
+% ---
+
+% ---
+% Folha de rosto
+% (o * indica que havera a ficha bibliografica)
+% ---
+\imprimirfolhaderosto*
+% ---
+
+% ---
+% Inserir a ficha bibliografica
+% ---
+\input{conteudo/1-fichaCatalografica.tex}
+% ---
+
+% ---
+% Inserir folha de aprovacao
+% ---
+\input{conteudo/2-folhaAprovacao.tex}
+% ---
+
+% ---
+% Dedicatoria
+% ---
+\input{conteudo/3-dedicatoria}
+% ---
+
+% ---
+% Agradecimentos
+% ---
+\input{conteudo/4-agradecimento}
+% ---
+
+% ---
+% Epigrafe
+% ---
+\input{conteudo/5-epigrafe}
+% ---
+
+% ---
+% RESUMOS
+% ---
+\input{conteudo/6-resumo_abstract}
+% ---
+
+
+%=============================== lista de figuras ==========================
+\pdfbookmark[0]{\listfigurename}{lof}
+\listoffigures*
+\counterwithout{figure}{chapter}
+\cleardoublepage
+
+%=============================== codigo fonte ==========================
+\renewcommand{\lstlistingname}{Código-Fonte}% Listing -> Algorithm
+\renewcommand{\lstlistlistingname}{Lista de Códigos-Fonte}
+\lstlistoflistings
+\counterwithout{lstlisting}{chapter}
+\cleardoublepage
+
+%=============================== lista de tabelas ==========================
+%\pdfbookmark[0]{\listtablename}{lot}
+%\listoftables*
+%\cleardoublepage
+
+
+%====================== lista de abreviaturas e siglas =====================
+%\input{conteudo/7-abreviaturas.tex}
+
+
+%============================ lista de simbolos ============================
+%\input{conteudo/8-simbolos.tex}
+
+
+%=============================== sumario =============================================
+
+\pdfbookmark[0]{\contentsname}{toc}
+\tableofcontents*
+\addtocontents{toc}{\vspace{-15.0pt}\small}
+\cleardoublepage
+
+
+% ----------------------------------------------------------
+% AQUI INICIA OS ELEMENTOS DO TEXTO
+% ----------------------------------------------------------
+\textual
+
+% ----------------------------------------------------------
+% Capitulos
+% 
+% . Introdução
+% .. Do problema e da pesquisa
+% . Revisão, Bibliografica
+% .. Treplica, Replicação Ativa
+% .. Cyan, Metaobjetos
+% ... Paradoxo da auto referencia
+% ... Nemerle, Xtend, Groovy, Scala
+% ... Definir Protocolo de Metaobjetos
+% .. Trabalhos Relacionados
+% . Pesquisa
+% .. Iniciar com o Artigo
+% . Estudo de Caso
+% .. Demo Explicação
+% . Conclusão
+% . Referencias
+%
+%
+% ----------------------------------------------------------
+
+\include{conteudo/capitulos/1-introducao}
+\include{conteudo/capitulos/2-metaprog}
+\include{conteudo/capitulos/3-replicacao}
+\include{conteudo/capitulos/4-pesquisa}
+\include{conteudo/capitulos/5-estudo}
+\include{conteudo/capitulos/6-conclusao}
+% ---------------------------------------------------------- 
+
+% ----------------------------------------------------------
+% ELEMENTOS POS-TEXTUAIS
+% ----------------------------------------------------------
+\postextual
+% ----------------------------------------------------------
+
+% ----------------------------------------------------------
+% Referencias bibliograficas
+% ----------------------------------------------------------
+\bibliography{referencias}
+
+
+% ----------------------------------------------------------
+% Glossario
+% ----------------------------------------------------------
+%
+% Consulte o manual da classe abntex2 para orientacoes sobre o glossario.
+%
+%\glossary
+
+% ----------------------------------------------------------
+% Apendices
+% ----------------------------------------------------------
+
+% ---
+% Inicia os apendices
+% ---
+\begin{apendicesenv}
+
+\include{conteudo/capitulos/7-apfonte}
+
+\end{apendicesenv}
+% ---
+
+% ----------------------------------------------------------
+% Anexos
+% ----------------------------------------------------------
+
+% ---
+% Inicia os anexos
+% ---
+\begin{anexosenv}
+
+%\include{conteudo/capitulos/8-anexo1}
+
+\end{anexosenv}
+% --- 
+
+%---------------------------------------------------------------------
+% INDICE REMISSIVO
+%---------------------------------------------------------------------
+\phantompart
+\printindex
+%---------------------------------------------------------------------
+
+\end{document}

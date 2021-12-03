@@ -1,0 +1,12 @@
+package cyan.lang
+
+object ExceptionStr(String _message) extends CyException
+
+    public func eval: ExceptionStr e {
+        Out println: (e message);
+    }
+    
+    func message -> String = _message;
+    
+end
+

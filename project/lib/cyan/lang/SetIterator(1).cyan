@@ -1,0 +1,28 @@
+package cyan.lang
+
+object SetIterator<T> implements Iterator<T>
+
+    func init: Array<T> s {
+        self.s = s;
+        index = 0;
+    }
+    
+    override
+    func hasNext -> Boolean {
+        return index < (s size);
+    }
+    
+    override
+    func next -> T {
+        if  index < (s size) {
+            ++index;
+            return s[index-1];
+        }
+        else {
+            throw: ExceptionIterator;
+        }
+    }
+    
+    Array<T> s
+    var Int index
+end

@@ -1,0 +1,99 @@
+package cyan.lang
+
+object Set<T> implements IHas<T>, Iterable<T>
+
+    func init { array = Array<T> new; sizeSet = 0 }
+    
+    func add: T elem {
+        for e in array {
+            if e == elem {
+                return Nil
+            }
+        }
+        ++sizeSet;
+        array add: elem
+    }
+    func size -> Int = sizeSet;
+    
+    override
+    func has: T elem -> Boolean {
+        for e in array {
+            if e == elem {
+                return true
+            }
+        }
+        return false
+    }
+    
+    func remove: T elem -> Boolean {
+        var Int j = 0;
+        let size = array size;
+        while j < size {
+            if array[j] == elem {
+                array remove: j;
+                --sizeSet;
+                return true;
+            }
+            ++j;
+        }
+        return false;
+    }
+    
+
+    override
+    func foreach: Function<T, Nil> b {
+        array foreach: b
+    }
+
+    func filter: Function<T, Boolean> f -> Set<T> {
+        let other = Set<T> new;
+        self foreach: { (: T elem :) 
+            if f eval: elem {
+                other add: elem
+            }
+        };
+        return other
+    }
+    
+    func filter: Function<T, Boolean> f foreach: Function<T, Nil> b {
+        array foreach: { (: T elem :) 
+            if f eval: elem {
+                b eval: elem
+            }
+        };
+    }
+    
+
+    func map: Function<T, T> f -> Set<T> {
+        let mapped = Set<T>();
+        for elem in self {
+            mapped add: (f eval: elem)
+        }
+        ^mapped
+    }
+
+
+    override
+    func iterator -> Iterator<T> {
+        return SetIterator<T> new: array
+    }
+
+
+    func + Iterable<T> other -> Iterable<T> {
+        let r = Set<T>();
+        self foreach: { (: T elem :) r add: elem };
+        other foreach: { (: T elem :) r add: elem };
+        return r;
+    }    
+
+    func asArray -> Array<T> {
+        let Array<T> r = Array<T>();
+        for elem in array {
+            r add: elem
+        }
+        return r
+    }        
+    
+    Array<T> array
+    var Int sizeSet
+end

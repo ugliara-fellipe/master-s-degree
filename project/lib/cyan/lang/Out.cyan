@@ -1,0 +1,72 @@
+package cyan.lang
+
+object Out
+    func println: (Any any) {
+        print: any;
+        @javacode<<<
+            System.out.print( "\n" );
+            System.out.flush();
+        >>>
+        return Nil
+    }
+    func print: (Any any) {
+        @javacode<<<
+            System.out.print( _any._asString().s );
+            System.out.flush();
+        >>>
+        return Nil
+    }
+    
+
+    func println: (Any p1, Any p2) {
+        print: p1;
+        println: p2;
+    }
+    func print: (Any p1, Any p2) {
+        print: p1;
+        print: p2;
+    }
+    
+    func println: (Any p1, Any p2, Any p3) {
+        print: p1;
+        print: p2;
+        println: p3;
+    }
+    func print: (Any p1, Any p2, Any p3) {
+        print: p1;
+        print: p2;
+        print: p3
+    }
+
+    func println: (Any p1, Any p2, Any p3, Any p4) {
+        print: p1;
+        print: p2;
+        print: p3;
+        println: p4;
+    }
+    func print: (Any p1, Any p2, Any p3, Any p4) {
+        print: p1;
+        print: p2;
+        print: p3;
+        print: p4
+    }
+
+
+    func println: (Any p1, Any p2, Any p3, Any p4, Any p5) {
+        print: p1;
+        print: p2;
+        print: p3;
+        print: p4;
+        println: p5;
+    }
+    func print: (Any p1, Any p2, Any p3, Any p4, Any p5) {
+        print: p1;
+        print: p2;
+        print: p3;
+        print: p4;
+        print: p5
+    }
+
+    
+end
+

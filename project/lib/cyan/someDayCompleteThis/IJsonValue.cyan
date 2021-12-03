@@ -1,0 +1,12 @@
+package cyan.io
+
+@javacode{*
+import javax.json.*;
+*}
+
+interface IJsonValue
+
+    func getValueType -> IJsonValueType
+    func asString -> String
+
+end

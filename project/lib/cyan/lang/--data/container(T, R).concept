@@ -1,0 +1,24 @@
+// based on http://en.cppreference.com/w/cpp/concept
+T has [ 
+    func add: R
+    func clear
+    func size -> Int
+],
+T implements Iterable<T>
+
+
+axiom containerTest: T t, R r {%
+    t clear;
+    if t size != 0 {
+        ^"size of an object of T after calling method 'clear' should be 0"
+    }
+    t add: r;
+    if t size != 1 {
+        ^"size of a clean object of T after calling method 'add' should be 1"
+    }
+    t clear;
+    if t size != 0 {
+        ^"size of an object of T after calling method 'clear' should be 0"
+    }
+    return Nil
+%}

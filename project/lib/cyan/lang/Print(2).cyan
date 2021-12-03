@@ -1,0 +1,27 @@
+package cyan.lang
+
+/*
+   example: hashTable foreachKeyValue: Print<String, Int>;
+*/
+object Print<T, U> extends Function<T, U, Nil>
+
+    func init { } 
+    func init: String between {
+        self.between = between;
+    }
+    func init: String between, String after {
+        self.between = between;
+        self.after = after;
+    }
+    
+    override
+    func eval: T t, U u {
+        t print;
+        between print;
+        u print;
+        after print
+    }
+    
+    String between = " "
+    String after = "\n"
+end

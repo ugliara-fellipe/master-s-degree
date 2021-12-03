@@ -1,0 +1,9 @@
+package cyan.lang
+
+abstract object FunctionFieldPipeNil<T, FieldName> extends Function<T, Nil>
+    func | (Function<T, Nil> other) -> Function<T, Nil> = {
+       (: T leftSide -> Nil :)
+       eval: leftSide;
+       other eval: leftSide;
+    };
+end

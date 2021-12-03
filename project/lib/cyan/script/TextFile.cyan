@@ -1,0 +1,10 @@
+package cyan.script
+
+object TextFile
+    func init: String filename {
+    }
+    
+    func foreach: Function<TextFile, TextFile> { 
+    }
+end
+

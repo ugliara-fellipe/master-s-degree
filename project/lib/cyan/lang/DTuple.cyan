@@ -1,0 +1,82 @@
+package cyan.lang
+
+
+@doc{*
+    A dynamic tuple. Given a variable 't' of this prototype, 't ?name: v' adds 'name'
+    with value 'v' to a list. When 't' receives a message 'name', as in 't ?name',
+    value 'v' is returned. 
+        It is best to declare a variable that refer to a DTuple object with type Dyn. 
+    The adding and retrieving of values becomes more clean:
+          let Dyn t = DTuple();
+          t name: "Carolina";
+          t name println;
+*}
+
+object DTuple 
+
+    func init {
+        fieldList = Array<String> new;
+        valueList = Array<Dyn> new;
+    }
+    
+    @doc{*
+        if 'methodName' is the name of a unary method, the field should have already 
+        been added to the tuple. If not, a runtime error occurs. The value associated
+        to the unary method is returned. If 'methodName' is a method with just one
+        parameter, the value associated to the method name is returned. If 'args' 
+        has more than one parameter
+    *}
+    
+    override
+    func doesNotUnderstand: (String methodName, Array<Array<Dyn>> args) -> Dyn {
+    
+        if  args size == 1 || (methodName countChar: ':') > 1 {
+            let Array<Dyn> dynList = args[0];
+            if  dynList size == 0 {
+                // unary method or methods without parameters. Assume unary methods
+                var Int i = 0;
+                for fieldName in fieldList {
+                    if fieldName == methodName {
+                        return valueList[i];
+                    }
+                    ++i;
+                }
+            }
+            else if dynList size == 1 {
+                // methods with one parameter
+                var Int j = 0;
+                let newMethodName = methodName substring: 0, (methodName size - 1);
+                for fieldName in fieldList {
+                    if fieldName == newMethodName {
+                        valueList[j] = dynList[0];
+                        return dynList[0];
+                    }
+                    ++j;
+                }
+                fieldList add: (methodName substring: 0, (methodName size - 1));
+                valueList add: dynList[0];
+                return dynList[0];
+            }
+        }
+        ("Method $methodName was not found in object of prototype"
+           ++ self prototypeName) println;
+        return Nil
+	}
+
+    func contains: String fieldName -> Boolean {
+        return fieldList contains: fieldName
+    }
+
+    func size -> Int = fieldList size;
+   
+    func getFieldList -> Array<String> = fieldList;
+
+    /*
+       unaryMethodList is a list of pairs (name, body) in which 'name' is 
+       the name of the 'body', which is a function that takes just one 
+       parameter. This single parameter corresponds to 'self' because 
+       the functions are used as methods. 
+    */
+    Array<String> fieldList    
+    Array<Dyn> valueList
+end

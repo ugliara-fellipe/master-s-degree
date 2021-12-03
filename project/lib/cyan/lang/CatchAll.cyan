@@ -1,0 +1,6 @@
+package cyan.lang
+
+object CatchAll
+    func eval: (CyException e) { 
+    }
+end

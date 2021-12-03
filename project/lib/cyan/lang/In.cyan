@@ -1,0 +1,72 @@
+package cyan.lang
+
+@javacode{*
+    import cyan.lang._ExceptionReadFormat;
+*}
+
+public object In
+
+    public func readInt -> Int {
+        @javacode<<<
+        
+        
+        int number = 0;
+        
+	        try {
+				number = Integer.parseInt(CyanRuntime.readLine());
+			}
+	        catch ( NumberFormatException  e ) {
+				throw new ExceptionContainer__( new _ExceptionReadFormat());
+			}
+       
+        return new CyInt(number);
+          
+        >>>
+    }
+    
+    public func readFloat  -> Float {
+        @javacode<<<
+
+        float number = 0;
+        
+	        try {
+				number = Float.parseFloat(CyanRuntime.readLine());
+			}
+	        catch ( NumberFormatException  e ) {
+				throw new ExceptionContainer__( new _ExceptionReadFormat());
+			}
+        return new CyFloat(number);
+        >>>
+    }    
+    
+    public func readDouble -> Double {
+        @javacode<<<
+
+        double number = 0;
+        
+	        try {
+				number = Double.parseDouble(CyanRuntime.readLine());
+			}
+	        catch ( NumberFormatException  e ) {
+				throw new ExceptionContainer__( new _ExceptionReadFormat());
+			}
+        return new CyDouble(number);
+        >>>
+    }    
+
+    public func readChar -> Char {
+        @javacode<<<
+        
+        java.io.InputStreamReader read = new java.io.InputStreamReader(System.in);
+        java.io.BufferedReader in = new java.io.BufferedReader(read);
+        char ch = CyanRuntime.readLine().charAt(0);        
+        return new CyChar(ch);
+        >>>
+    }    
+    
+    public func readLine -> String {
+        @javacode<<<
+        return  new CyString(CyanRuntime.readLine());
+        >>>
+    }    
+end

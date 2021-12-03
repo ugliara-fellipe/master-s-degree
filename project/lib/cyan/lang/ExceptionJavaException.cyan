@@ -1,0 +1,22 @@
+package cyan.lang
+
+/*
+   ExceptionJavaException wraps a Java exception
+*/
+final object ExceptionJavaException extends CyException
+    @javacode{*
+        public _ExceptionJavaException(Throwable javaException) {
+            this.javaException = javaException;
+        }
+        public Throwable javaException;
+    *}
+    
+    func getExceptionName -> String {
+    @javacode{*
+        return new CyString(javaException.getClass().getName());
+    *}
+    
+    }
+
+end
+

@@ -1,0 +1,234 @@
+package cyan.lang
+
+public final object Byte
+
+    @javacode<<<
+        public byte n = 0;
+        public CyByte(int n) { this.n = (byte ) n; }
+    >>>
+
+    func init {
+        @javacode{* n = 0; *}
+    }
+    
+
+
+    override
+    func eq:  (Dyn other) -> Boolean { 
+        @javacode<<< 
+            try {
+                return new CyBoolean(n == (((CyByte ) _other).n)) ; 
+            }
+            catch ( ClassCastException e ) {
+            }
+        >>> 
+        return false;
+    }
+    override
+    func neq: (Dyn other) -> Boolean { 
+        @javacode<<< 
+            try {
+                return new CyBoolean(n != (((CyByte) _other).n)) ; 
+            }
+            catch ( ClassCastException e ) {
+            }
+        >>> 
+        return false;
+    }
+    
+    
+    func +  (Byte other) -> Byte { @javacode<<< return new CyByte(n + _other.n); >>> }
+    func -  (Byte other) -> Byte { @javacode<<< return new CyByte(n - _other.n); >>> }
+    func *  (Byte other) -> Byte { @javacode<<< return new CyByte(n * _other.n); >>> }
+    func /  (Byte other) -> Byte { @javacode<<< return new CyByte(n / _other.n); >>> }
+    func %  (Byte other) -> Byte { @javacode<<< return new CyByte(n % _other.n); >>> }
+    func <  (Byte other) -> Boolean { @javacode<<< return new CyBoolean(n <  _other.n); >>> }
+    func <= (Byte other) -> Boolean { @javacode<<< return new CyBoolean(n <= _other.n); >>> }
+    func >  (Byte other) -> Boolean { @javacode<<< return new CyBoolean(n >  _other.n); >>> }
+    func >= (Byte other) -> Boolean { @javacode<<< return new CyBoolean(n >= _other.n); >>> }
+    
+   
+    func pred -> Byte {
+        @javacode{* return new CyByte( n - 1 ); *}
+    }
+
+    func succ -> Byte {
+        @javacode{* return new CyByte( n + 1 ); *}
+    }
+   
+   
+    func maxValue -> Byte {
+       @javacode{* return new CyByte( Byte.MAX_VALUE ); *}
+    }
+    
+
+    func minValue -> Byte {
+       @javacode{* return new CyByte( Byte.MIN_VALUE ); *}
+    }
+    
+    
+    override
+    func == (Dyn other)  -> Boolean { 
+        @javacode<<< 
+            long other;
+            if ( _other instanceof CyByte ) 
+                other = ((CyByte ) _other).n;
+            else if ( _other instanceof CyInt )
+                other = ((CyInt ) _other).n;
+            else if ( _other instanceof CyShort )
+                other = ((CyShort ) _other).n;
+            else if ( _other instanceof CyLong ) {
+                other = ((CyLong ) _other).n;
+            }
+            else if ( _other instanceof CyFloat ) {
+                float otherFloat = ((CyFloat ) _other).n;
+                if ( (float ) n == otherFloat )
+                    return CyBoolean.cyTrue;
+                else
+                    return CyBoolean.cyFalse;
+            }
+            else if ( _other instanceof CyDouble ) {
+                double otherDouble = ((CyDouble ) _other).n;
+                if ( (double ) n == otherDouble )
+                    return CyBoolean.cyTrue;
+                else
+                    return CyBoolean.cyFalse;
+            }
+            else
+                return CyBoolean.cyFalse;
+                
+            if ( other == (long ) n )
+                return CyBoolean.cyTrue;
+            else
+                return CyBoolean.cyFalse;
+        >>> 
+    }
+    
+    override
+    func != (Dyn other)  -> Boolean { 
+        if self == other { return false } else { return true }
+    }
+     
+   
+   
+   func <=> (Byte other) -> Int {  
+        if self < other { return -1 } 
+        else if self > other { return 1 }
+        else { 
+           return 0
+        }
+    }
+    func  .. (Byte theEnd) -> Interval<Byte> {  
+        return Interval<Byte> new: self, theEnd
+    } 
+    func ..< (Byte theEnd) -> Interval<Byte> {  
+        return Interval<Byte> new: self, (theEnd - 1B);
+    } 
+   
+    
+       // all unary operators are prefixed
+    func -   -> Byte { @javacode<<< return new CyByte(-n); >>> }
+    func +   -> Byte { @javacode<<< return this; >>> }
+        // and bit to bit
+    func & (Byte other) -> Byte { @javacode<<< return new CyByte(n & _other.n); >>> }
+        // or bit to bit
+    func | (Byte other) -> Byte { @javacode<<< return new CyByte(n | _other.n); >>> }
+    
+        // exclusive or bit to bit
+        
+    func ~| (Byte other) -> Byte { @javacode<<< return new CyByte(n ^ _other.n); >>> }
+        // binary not
+    func ~ -> Byte { @javacode<<< return new CyByte(~n); >>> }
+    
+    func |> Function<Byte, Byte> f -> Byte {
+        return f eval: self
+    }
+        
+    
+    func asInt    -> Int { @javacode<<< return new CyInt( (int ) n ); >>> }
+    func asShort  -> Short { @javacode<<< return new CyShort( (short) n ); >>> }
+    func asLong   -> Long { @javacode<<< return new CyLong( (long) n); >>> }
+    func asFloat  -> Float { @javacode<<< return new CyFloat( (float) n ); >>> }
+    func asDouble -> Double { @javacode<<< return new CyDouble( (double ) n ); >>> }
+    func asChar   -> Char { @javacode<<< return new CyChar( (char ) n); >>> }
+    func asBoolean -> Boolean { @javacode<<< return new CyBoolean( n == 0 ? false : true ); >>> }
+    override
+    func asString -> String { @javacode<<< return new CyString(n + ""); >>> }
+    
+
+    func to: (Byte max) do: (Function<Byte, Nil> b) { 
+        var Byte i = self;
+        while i <= max {
+            b eval: i;
+            ++i
+        }
+    }
+    
+       // injection method to be used with context object.
+       // the initial value is private to injectTo
+    func to: (Byte max) into: (InjectObject<Byte> injectTo) {
+        var Byte i = self;
+        while i <= max {
+            injectTo eval: i;
+            ++i
+        }
+    }
+
+    
+     
+    func times: Function<Nil> b {
+        var Byte i = 0Byte;
+        while i < self {
+            b eval;
+            ++i;
+        }
+    }
+    
+    func repeat: Function<Byte, Nil> b {
+        var Byte i = 0Byte;
+        while i < self {
+            b eval: i;
+            ++i;
+        }
+    }
+
+    func to: (Byte max)
+        inject: (Byte initialValue)
+        into: (Function<Byte, Byte, Byte> b) -> Byte {
+        var Byte i = self;
+        var Byte total = initialValue;
+        while i <= max {
+            total = b eval: total, i;
+            ++i
+        };
+        return total
+    }
+
+    func in: (Iterable<Byte> container) -> Boolean {
+        for item in container {
+            if self == item {
+                return true;
+            }
+        };
+        return false;
+    }
+    
+    func between: Interval<Byte> inter -> Boolean {
+        return self >= inter first && self <= inter last
+    }
+
+    override
+    func hashCode -> Int { 
+        @javacode<<<
+            return new CyInt(n) ;
+        >>>
+    }
+    
+
+    
+    func defaultValue -> Byte {
+        return 0B;
+    }       
+    
+end
+

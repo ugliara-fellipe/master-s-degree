@@ -1,0 +1,21 @@
+package treplica
+
+@javacode<<<
+import java.io.Serializable;
+import br.unicamp.treplica.Action;
+>>>
+
+@javaImplements(Action)
+@javaImplements(Serializable)
+abstract object Action
+    func init {
+    }
+
+    @javacode<<< 
+    public Object executeOn(Object stateMachine) {
+			return _executeOn_1( (_Context)stateMachine );
+		}
+    >>>
+
+    abstract func executeOn: Context context -> Dyn
+end

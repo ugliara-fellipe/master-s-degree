@@ -1,0 +1,10 @@
+package cyan.math
+
+object Sin extends Function<Double, Double>
+
+    override
+    func eval: Double x -> Double {
+        return Math sin: x
+    }
+
+end

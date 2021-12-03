@@ -1,0 +1,175 @@
+package cyan.lang
+
+public final object Boolean
+
+    @javacode<<<
+    public boolean b;
+    public CyBoolean(boolean b) { this.b = b; }
+    public static final CyBoolean cyTrue = new CyBoolean(true);
+    public static final CyBoolean cyFalse = new CyBoolean(false);
+    public static final Boolean javaTrue = new Boolean(true);
+    public static final Boolean javaFalse = new Boolean(false);
+    >>>
+ 
+    func init {
+        @javacode{* b = false; *}
+    }
+    
+
+    override
+    func eq:  (Dyn other) -> Boolean { 
+        @javacode<<< 
+            try {
+                return new CyBoolean(b == (((CyBoolean ) _other).b)) ; 
+            }
+            catch ( ClassCastException e ) {
+            }
+        >>> 
+        return false;
+    }
+
+    override
+    func neq: (Dyn other) -> Boolean { 
+        @javacode<<< 
+            try {
+                return new CyBoolean(b != (((CyBoolean ) _other).b)) ; 
+            }
+            catch ( ClassCastException e ) {
+            }
+        >>> 
+        return false;
+    }
+    
+  
+    func !  -> Boolean { @javacode<<< return new CyBoolean( !b ); >>> }
+
+
+    func <  (Boolean other)  -> Boolean { 
+        @javacode<<< return new CyBoolean((b ? 1 : 0) <  (_other.b ? 1 : 0)); >>> 
+    }
+    func <= (Boolean other)  -> Boolean { 
+        @javacode<<< return new CyBoolean((b ? 1 : 0) <=  (_other.b ? 1 : 0)); >>> 
+    }
+    func >  (Boolean other)  -> Boolean { 
+        @javacode<<< return new CyBoolean((b ? 1 : 0) >  (_other.b ? 1 : 0)); >>> 
+    }
+    func >= (Boolean other)  -> Boolean { 
+        @javacode<<< return new CyBoolean((b ? 1 : 0) >=  (_other.b ? 1 : 0)); >>> 
+    }
+    
+    /* to do: add a metaobject that issues a compiler error if
+       other is not of types Boolean, Any, or Dyn
+    */
+    override
+    func == (Dyn other)  -> Boolean { 
+        @javacode<<< 
+            try {
+                return new CyBoolean(b == (((CyBoolean ) _other).b)) ; 
+            }
+            catch ( ClassCastException e ) {
+            }
+        >>> 
+        return false;
+    }
+    override
+    func != (Dyn other)  -> Boolean { 
+        @javacode<<< 
+            try {
+                return new CyBoolean(b != (((CyBoolean ) _other).b)) ; 
+            }
+            catch ( ClassCastException e ) {
+            }
+        >>> 
+        return true;
+    }
+    
+    func => Function<Nil> ifTrueFun {
+        @javacode{*
+            if ( this.b ) 
+                _ifTrueFun._eval();
+        *}
+        return Nil
+    }
+
+    func |> Function<Boolean, Boolean> f -> Boolean {
+        return f eval: self
+    }
+
+
+
+    func asInt -> Int { @javacode<<< return new CyInt( b ? 1 : 0 ); >>> }
+    override
+    func asString -> String { @javacode<<< return new CyString(b + ""); >>> }
+    
+    overload
+    func to: (Boolean max) do: (Function<Nil> b) { 
+        var Int i = self asInt;
+        var Int n = max asInt;
+        while i <= n {
+            b eval;
+            ++i
+        }
+    }
+    func to: (Boolean max) do: (Function<Boolean, Nil> b) { 
+        if ! self { b eval: false };
+        if max { b eval: true }
+    }
+    func ifTrue:   (Function<Nil> trueBlock) { 
+        if self { 
+            trueBlock eval
+        }
+    }
+    func ifFalse:  (Function<Nil> falseBlock) { 
+        if ! self {
+            falseBlock eval
+        }
+    }
+    func ifTrue:   (Function<Nil> trueBlock) ifFalse: (Function<Nil> falseBlock) { 
+        if self {
+            trueBlock eval
+        }
+        else {
+            falseBlock eval
+        }
+    }
+    func ifFalse:  (Function<Nil> falseBlock) ifTrue:  (Function<Nil> trueBlock) { 
+        if self {
+            trueBlock eval
+        }
+        else {
+            falseBlock eval
+        }
+    }
+
+    @checkTF 
+    func t: (Any trueValue)  f: (Any falseValue) -> Any { 
+        if self {
+            return trueValue
+        }
+        else {
+            return falseValue
+        }
+    }
+    @checkTF 
+    func f: (Any falseValue) t: (Any trueValue) -> Any { 
+        if self {
+            return trueValue
+        }
+        else {
+            return falseValue
+        }
+    }
+
+    override
+    func hashCode -> Int { 
+        @javacode<<<
+            return new CyInt( b ? javaTrue.hashCode() : javaFalse.hashCode() );
+        >>>
+    }
+    
+
+
+    func defaultValue -> Boolean {
+        return false;
+    }       
+end

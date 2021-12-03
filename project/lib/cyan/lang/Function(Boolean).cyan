@@ -1,0 +1,17 @@
+package cyan.lang
+
+abstract object Function<Boolean>
+    abstract func eval -> Boolean
+    func whileTrue: (Function<Nil> aFunction)  {
+       (self eval) ifTrue: {
+           aFunction eval;
+           self whileTrue: aFunction
+       }
+    }
+    func whileFalse: (Function<Nil> aFunction)  {
+       (self eval) ifFalse: {
+           aFunction eval;
+           self whileFalse: aFunction
+       }
+    }
+end

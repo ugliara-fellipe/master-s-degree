@@ -1,0 +1,83 @@
+package cyan.io
+
+    
+@javacode{* import java.io.*; *} 
+
+
+@doc{*
+
+   All prototypes of package cyan.io have not been tested. Use them
+   at your own risk.
+
+*}
+
+object OutByteFile
+
+    func init: String filename {
+        self.filename = filename;
+        @javacode{*
+        try { 
+            file = new java.io.FileOutputStream(_filename.s);
+        }
+        catch ( FileNotFoundException e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionFileNotFound( _filename ) );            
+        }
+        *}
+    }
+    
+    func writeByteArray: Array<Byte> byteArray {
+        for elem in byteArray {
+            @javacode{*
+            
+            try { 
+                file.write( _elem.n );
+            }
+            catch ( IOException e ) {
+                throw new ExceptionContainer__( 
+                    new _ExceptionIO( _filename ) );            
+            }
+            
+            *}
+        }
+        return Nil
+    }
+
+    func writeByte: Byte aByte {
+        @javacode{*
+        
+        try { 
+            file.write( _aByte.n );
+        }
+        catch ( IOException e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( _filename ) );            
+        }
+        
+        *}
+        return Nil
+    }
+    
+    
+    func close {
+        @javacode{*
+        try { 
+            file.close();
+        }
+        catch ( IOException e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( _filename ) );            
+        }        
+        *}
+        return Nil
+    }
+    
+    String filename
+    
+    @javacode{*
+    FileOutputStream file;        
+    *}
+
+
+end
+

@@ -1,0 +1,48 @@
+package main
+
+import treplica
+
+object Program    
+
+    func init {
+      Out println: "Program Init";
+    }
+    
+    func run: Array<String> args {
+        var local = ("/var/tmp/magic" ++ args[1]);
+        @treplicaInit( 2, 200, local )
+	      var calc = Calculator new; 
+
+        var read = ""; 
+        var left = ""; 
+        var right = "";
+        
+        while true { 
+          read = In readLine;
+          if read == "add" {
+            left = In readLine; 
+            right = In readLine; 
+            calc add: left, right;
+          } 
+          else if read == "sub" {
+            left = In readLine; 
+            right = In readLine; 
+            calc sub: left, right;
+          } 
+          else if read == "mult" {
+            left = In readLine; 
+            right = In readLine; 
+            calc mult: left, right;
+          }
+          else if read == "div" {
+            left = In readLine; 
+            right = In readLine; 
+            calc div: left, right;
+          } 
+          else if read == "show" {
+            Out println: calc show;
+          }
+        }
+    } 
+
+end

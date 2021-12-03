@@ -1,0 +1,5 @@
+package cyan.lang
+
+
+abstract object Filter<T> extends Function<T, Boolean>
+end

@@ -1,0 +1,27 @@
+package main
+
+import treplica
+
+object Tested extends Context
+    var String result 
+    
+    func init {   
+      result = "hello";
+    }
+
+    @treplicaAction
+    func perform {
+      nondeterministic: (setResult: "bye");
+      Out println: "perform: " ++ self.result;
+    }
+
+    func setResult: String value -> String {
+      self.result = value;
+      return value;
+    }
+
+    func nondeterministic: String value {
+      Out println: "nondeterministic: " ++ value;
+    }
+end
+

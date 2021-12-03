@@ -1,0 +1,53 @@
+package treplica
+
+@javacode<<< 
+import java.io.Serializable;
+import br.unicamp.treplica.StateMachine;
+>>>
+
+object Treplica
+
+    @javacode<<<
+    public static StateMachine stateMachine;
+    >>>
+  
+    func init {
+        Out println: "Treplica: init";
+        //var JavaClass<br, unicamp, treplica, stateMachine> sys = JavaClass<br, unicamp, treplica, stateMachine> new;
+    }
+
+    func runMachine: (Context context) numberProcess: (Int nProcesses) rtt: (Int rtt) path: (String stableMedia) {
+        Out println: "Treplica: runMachine";
+        @javacode<<<
+        try {        
+          stateMachine = StateMachine.createPaxosSM( (Serializable) _context, ((CyInt ) _rtt).n, ((CyInt ) _nProcesses).n, false, ((CyString ) _stableMedia).s);
+        } catch (Exception p) {
+          System.out.println("Treplica: runMachine: exception");
+          System.out.println(p);
+        }        
+        >>>
+        return Nil
+    }
+
+    func getState -> Context {
+        Out println: "Treplica: getState";     
+        @javacode<<<
+        _Context result;
+        result = (_Context)stateMachine.getState();      
+        return result;        
+        >>>
+    }
+
+    func execute: (Action action) -> Dyn {
+        Out println: "Treplica: execute";     
+        @javacode<<<
+        try { 
+          return stateMachine.execute(_action); 
+        } catch (Exception p) {
+          System.out.println("Treplica: execute: exception");
+          System.out.println(p);
+        }        
+        >>>
+        return Nil
+    }
+end

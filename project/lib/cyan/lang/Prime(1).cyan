@@ -1,0 +1,10 @@
+package cyan.lang
+
+object Prime<T> extends Function<T, Boolean>
+    
+    override
+    func eval: T t -> Boolean {
+        return t prime
+    }
+    
+end

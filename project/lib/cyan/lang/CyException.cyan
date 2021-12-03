@@ -1,0 +1,6 @@
+package cyan.lang
+
+public object CyException
+
+end
+

@@ -1,0 +1,37 @@
+package cyan.util.graph
+
+object Edge
+
+    func init: Vertex start Vertex theEnd { 
+        self._start = start;
+        self._theEnd = theEnd;
+        self._weight = 0.0;
+        self._color = 0;
+    }
+    
+    func addEdge: Edge edge {
+        self._edgeList add: edge
+    }
+
+    func start -> Vertex = _start;
+    func theEnd -> Vertex = _theEnd;
+    func visited -> Boolean = _visited;
+    func weight -> Double = _weight;
+
+    func start: Vertex _start { self._start = _start }
+    func theEnd: Vertex _theEnd { self._theEnd = _theEnd }
+    func visited: Boolean _visited {
+        self._visited = _visited;
+    }
+    func weight: Double _weight {
+        self._weight = _weight
+    }
+
+    
+    var Vertex _start, _theEnd
+    var Boolean _visited
+    var Double _weight
+    var Int _color
+    
+end
+

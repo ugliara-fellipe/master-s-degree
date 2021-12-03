@@ -1,0 +1,749 @@
+package cyan.io
+
+    
+@javacode{* import java.io.*; *}
+
+@doc{*
+
+   All prototypes of package cyan.io have not been tested. Use them
+   at your own risk.
+
+*}
+
+object CyFile
+
+    func init: String filename {
+        @javacode{*
+        try { 
+            file = new File(_filename.s);
+        }
+        catch ( Throwable e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( _filename ) );            
+        }
+        *}
+    }
+
+    func init: CyFile parent, String filename {
+        @javacode{*
+        try { 
+            file = new File( _parent.file, _filename.s);
+        }
+        catch ( Throwable e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( _filename ) );            
+        }
+        *}
+    }
+
+    @prototypeCallOnly
+    func separator -> String {
+        @javacode{*
+        return new CyString( File.separator );
+        *}
+    }
+    
+    @prototypeCallOnly
+    func pathSeparatorChar -> Char {
+        @javacode{*
+        return new CyChar( File.pathSeparatorChar );
+        *}
+    }
+  
+    
+    @prototypeCallOnly
+    func pathSeparator -> String {
+        @javacode{*
+        return new CyString( File.pathSeparator );
+        *}
+    }
+ 
+    func name -> String {
+        @javacode{*
+
+        return new CyString( file.getName() );        
+        *}
+    }
+
+
+ 
+    func getParent -> String|Nil {
+        var Boolean ok = true;
+        var String ret;
+        @javacode{*
+        _ret = null;
+        String p = file.getParent();
+        if ( p == null ) _ok = CyBoolean.cyFalse;
+        else {
+            _ret = new CyString(p);
+        }
+        *}
+        if ok {
+            return ret
+        }
+        else {
+            return Nil
+        }
+    }
+    
+ 
+    func getParentFile -> CyFile|Nil {
+        var Boolean ok = true;
+        var CyFile ret;
+        @javacode{*
+        _ret = null;
+        File p = file.getParentFile();
+        if ( p == null ) _ok = CyBoolean.cyFalse;
+        else {
+            _ret = new _CyFile();
+            _ret.file = p;
+        }
+        *}
+        if ok {
+            return ret
+        }
+        else {
+            return Nil
+        }
+    }
+    
+    
+   func getPath -> String {
+        var String ret;
+        @javacode{*
+        String p = file.getPath();
+        if ( p == null ) _ret = new CyString("");
+        else {
+            _ret = new CyString(p);
+        }
+        *}
+        return ret;
+    }
+        
+
+    func isAbsolute -> Boolean {
+        @javacode{*
+        return file.isAbsolute() ? CyBoolean.cyTrue : CyBoolean.cyFalse;
+        *}
+    }
+
+    
+    
+    func getAbsolutePath -> String {
+        var String ret;
+   
+        @javacode{*
+        try { 
+            String p = file.getAbsolutePath();
+            if ( p == null ) _ret = new CyString("");
+            else {
+                _ret = new CyString(p);
+            }
+        }
+        catch ( Throwable e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( new CyString(file.getName()) ) );            
+        }
+        *}
+        return ret;
+    }
+       
+
+    
+    func getAbsoluteFile -> CyFile {
+        var CyFile ret;
+   
+        @javacode{*
+   
+        try { 
+            File p = file.getAbsoluteFile();
+            _ret = new _CyFile();
+            _ret.file = p;
+        }
+        catch ( Throwable e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( new CyString(file.getName()) ) );            
+        }
+        *}
+        return ret;
+    }
+
+
+    func getCanonicalPath -> String {
+        var String ret;
+   
+        @javacode{*
+        try { 
+            String p = file.getCanonicalPath();
+            if ( p == null ) _ret = new CyString("");
+            else {
+                _ret = new CyString(p);
+            }
+        }
+        catch ( Throwable e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( new CyString(file.getName()) ) );            
+        }
+        *}
+        return ret;
+    }
+ 
+    
+    func getCanonicalFile -> CyFile {
+        var CyFile ret;
+   
+        @javacode{*
+        try { 
+            File p = file.getCanonicalFile();
+            _ret = new _CyFile();
+            _ret.file = p;
+        }
+        catch ( Throwable e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( new CyString(file.getName()) ) );            
+        }
+        *}
+        return ret;
+    }
+ 
+
+    func canRead -> Boolean {
+   
+        @javacode{*
+        try { 
+            return file.canRead()  ? CyBoolean.cyTrue : CyBoolean.cyFalse;
+        }
+        catch ( Throwable e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( new CyString(file.getName()) ) );            
+        }
+        *}
+    }
+ 
+    func canWrite -> Boolean {
+   
+        @javacode{*
+        try { 
+            return file.canWrite() ? CyBoolean.cyTrue : CyBoolean.cyFalse;
+        }
+        catch ( Throwable e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( new CyString(file.getName()) ) );            
+        }
+        *}
+    }
+ 
+    func exists -> Boolean {
+   
+        @javacode{*
+        try { 
+            return file.exists() ? CyBoolean.cyTrue : CyBoolean.cyFalse;
+        }
+        catch ( Throwable e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( new CyString(file.getName()) ) );            
+        }
+        *}
+    }
+     
+     
+    func isDirectory -> Boolean {
+   
+        @javacode{*
+        try { 
+            return file.isDirectory() ? CyBoolean.cyTrue : CyBoolean.cyFalse;
+        }
+        catch ( Throwable e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( new CyString(file.getName()) ) );            
+        }
+        *}
+    }
+      
+     
+    func isFile -> Boolean {
+   
+        @javacode{*
+        try { 
+            return file.isFile() ? CyBoolean.cyTrue : CyBoolean.cyFalse;
+        }
+        catch ( Throwable e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( new CyString(file.getName()) ) );            
+        }
+        *}
+    }
+      
+
+
+    func isHidden -> Boolean {
+   
+        @javacode{*
+        try { 
+            return file.isHidden() ? CyBoolean.cyTrue : CyBoolean.cyFalse;
+        }
+        catch ( Throwable e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( new CyString(file.getName()) ) );            
+        }
+        *}
+    }
+      
+  
+     
+    func lastModified -> Long {
+   
+        @javacode{*
+        try { 
+            return new CyLong( file.lastModified() );
+        }
+        catch ( Throwable e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( new CyString(file.getName()) ) );            
+        }
+        *}
+    }
+      
+  
+     
+    func length -> Long {
+   
+        @javacode{*
+        try { 
+            return new CyLong( file.length() );
+        }
+        catch ( Throwable e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( new CyString(file.getName()) ) );            
+        }
+        *}
+    }
+      
+  
+
+
+    func createNewFile -> Boolean {
+   
+        @javacode{*
+        try { 
+            return file.createNewFile() ? CyBoolean.cyTrue : CyBoolean.cyFalse;
+        }
+        catch ( Throwable e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( new CyString(file.getName()) ) );            
+        }
+        *}
+    }
+      
+   
+  
+
+
+    func delete -> Boolean {
+   
+        @javacode{*
+        try { 
+            return file.delete() ? CyBoolean.cyTrue : CyBoolean.cyFalse;
+        }
+        catch ( Throwable e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( new CyString(file.getName()) ) );            
+        }
+        *}
+    }
+      
+
+
+    func deleteOnExit {
+   
+        @javacode{*
+        try { 
+            file.deleteOnExit();
+        }
+        catch ( Throwable e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( new CyString(file.getName()) ) );            
+        }
+        *}
+        return Nil
+    }
+     
+
+    func list -> Array<String> {
+   
+        let ret = Array<String>();
+        @javacode{*
+        try { 
+            String []fileList = file.list();
+            for ( String s : fileList ) {
+                _ret._add_1( new CyString(s) );
+            }
+        }
+        catch ( Throwable e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( new CyString(file.getName()) ) );            
+        }
+        *}
+        return ret;
+    }
+     
+
+    func listFiles -> Array<CyFile> {
+   
+        let ret = Array<CyFile>();
+        @javacode{*
+        try { 
+            File []fileList = file.listFiles();
+            for ( File f : fileList ) {
+                _CyFile newfile = new _CyFile();
+                newfile.file = f;
+                _ret._add_1( newfile );
+            }
+        }
+        catch ( Throwable e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( new CyString(file.getName()) ) );            
+        }
+        *}
+        return ret;
+    }
+        
+        
+
+
+    func mkdir -> Boolean {
+   
+        @javacode{*
+        try { 
+            return file.mkdir() ? CyBoolean.cyTrue : CyBoolean.cyFalse;
+        }
+        catch ( Throwable e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( new CyString(file.getName()) ) );            
+        }
+        *}
+    }
+  
+
+    func mkdirs -> Boolean {
+   
+        @javacode{*
+        try { 
+            return file.mkdirs() ? CyBoolean.cyTrue : CyBoolean.cyFalse;
+        }
+        catch ( Throwable e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( new CyString(file.getName()) ) );            
+        }
+        *}
+    }
+            
+  
+
+    func renameTo: CyFile dest -> Boolean {
+   
+        @javacode{*
+        try { 
+            return file.renameTo(_dest.file) ? CyBoolean.cyTrue : CyBoolean.cyFalse;
+        }
+        catch ( Throwable e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( new CyString(file.getName()) ) );            
+        }
+        *}
+    }
+    
+  
+  
+
+    func setLastModified: Long time -> Boolean {
+   
+        @javacode{*
+        try { 
+            return file.setLastModified(_time.n) ? CyBoolean.cyTrue : CyBoolean.cyFalse;
+        }
+        catch ( Throwable e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( new CyString(file.getName()) ) );            
+        }
+        *}
+    }
+    
+    
+
+    func setReadOnly -> Boolean {
+   
+        @javacode{*
+        try { 
+            return file.setReadOnly() ? CyBoolean.cyTrue : CyBoolean.cyFalse;
+        }
+        catch ( Throwable e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( new CyString(file.getName()) ) );            
+        }
+        *}
+    }
+            
+    func setWritable: Boolean writable, Boolean ownerOnly -> Boolean {
+   
+        @javacode{*
+        try { 
+            return file.setWritable(_writable.b, _ownerOnly.b) ? CyBoolean.cyTrue : CyBoolean.cyFalse;
+        }
+        catch ( Throwable e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( new CyString(file.getName()) ) );            
+        }
+        *}
+    }
+            
+    func setWritable: Boolean writable -> Boolean {
+   
+        @javacode{*
+        try { 
+            return file.setWritable(_writable.b) ? CyBoolean.cyTrue : CyBoolean.cyFalse;
+        }
+        catch ( Throwable e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( new CyString(file.getName()) ) );            
+        }
+        *}
+    }
+        
+  
+    func setReadable: Boolean readable, Boolean ownerOnly -> Boolean {
+   
+        @javacode{*
+        try { 
+            return file.setReadable(_readable.b, _ownerOnly.b) ? CyBoolean.cyTrue : CyBoolean.cyFalse;
+        }
+        catch ( Throwable e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( new CyString(file.getName()) ) );            
+        }
+        *}
+    }
+            
+    func setReadable: Boolean readable -> Boolean {
+   
+        @javacode{*
+        try { 
+            return file.setWritable(_readable.b) ? CyBoolean.cyTrue : CyBoolean.cyFalse;
+        }
+        catch ( Throwable e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( new CyString(file.getName()) ) );            
+        }
+        *}
+    }
+          
+
+  
+    func setExecutable: Boolean executable, Boolean ownerOnly -> Boolean {
+   
+        @javacode{*
+        try { 
+            if ( file.setExecutable(_executable.b, _ownerOnly.b) ) 
+                return CyBoolean.cyTrue;
+            else
+                return CyBoolean.cyFalse;
+        }
+        catch ( Throwable e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( new CyString(file.getName()) ) );            
+        }
+        *}
+    }
+            
+    func setExecutable: Boolean executable -> Boolean {
+   
+        @javacode{*
+        try { 
+            return file.setExecutable(_executable.b) ? CyBoolean.cyTrue : CyBoolean.cyFalse;
+        }
+        catch ( Throwable e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( new CyString(file.getName()) ) );            
+        }
+        *}
+    }
+          
+
+
+    func canExecute -> Boolean {
+   
+        @javacode{*
+        try { 
+            return file.canExecute() ? CyBoolean.cyTrue : CyBoolean.cyFalse;
+        }
+        catch ( Throwable e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( new CyString(file.getName()) ) );            
+        }
+        *}
+    }
+
+
+    @prototypeCallOnly
+    func listRoots -> Array<CyFile>|Nil {
+   
+        var Boolean ok = true;
+        let ret = Array<CyFile>();
+        @javacode{*
+        try { 
+            File []fileList = File.listRoots();
+            if ( fileList == null ) {
+                _ok = CyBoolean.cyFalse;
+            }
+            else {
+                for ( File f : fileList ) {
+                    _CyFile newfile = new _CyFile();
+                    newfile.file = f;
+                    _ret._add_1( newfile );
+                }
+            }                
+        }
+        catch ( Throwable e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( new CyString(file.getName()) ) );            
+        }
+        *}
+        if ok { return ret }
+        else {
+            return Nil
+        }
+    }
+        
+     
+    func getTotalSpace -> Long {
+   
+        @javacode{*
+        try { 
+            return new CyLong( file.getTotalSpace() );
+        }
+        catch ( Throwable e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( new CyString(file.getName()) ) );            
+        }
+        *}
+    }
+      
+  
+     
+    func getFreeSpace -> Long {
+   
+        @javacode{*
+        try { 
+            return new CyLong( file.getFreeSpace() );
+        }
+        catch ( Throwable e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( new CyString(file.getName()) ) );            
+        }
+        *}
+    }
+      
+       
+    func getUsableSpace -> Long {
+   
+        @javacode{*
+        try { 
+            return new CyLong( file.getUsableSpace() );
+        }
+        catch ( Throwable e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( new CyString(file.getName()) ) );            
+        }
+        *}
+    }
+  
+    @prototypeCallOnly
+    func createTempFile: String prefix, String suffix, CyFile directory -> CyFile {
+        @javacode{*
+        try { 
+            _CyFile ret = new _CyFile();
+            ret.file = File.createTempFile(_prefix.s, _suffix.s, _directory.file);
+            return ret;
+        }
+        catch ( Throwable e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( new CyString(file.getName()) ) );            
+        }
+        *}
+    }
+
+    @prototypeCallOnly
+    func createTempFile: String prefix, String suffix -> CyFile {
+        @javacode{*
+        try { 
+            _CyFile ret = new _CyFile();
+            ret.file = File.createTempFile(_prefix.s, _suffix.s);
+            return ret;
+        }
+        catch ( Throwable e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( new CyString(file.getName()) ) );            
+        }
+        *}
+    }
+
+
+        
+    func compareTo: CyFile other -> Int {
+   
+        @javacode{*
+        try { 
+            return new CyInt( file.compareTo(_other.file) );
+        }
+        catch ( Throwable e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( new CyString(file.getName()) ) );            
+        }
+        *}
+    }
+  
+       
+    override
+    func == Dyn other -> Boolean {
+   
+        type other 
+            case CyFile otherFile {
+                @javacode{*
+                try { 
+                    return file.equals(_otherFile.file) ? CyBoolean.cyTrue : CyBoolean.cyFalse;
+                }
+                catch ( Throwable e ) {
+                    throw new ExceptionContainer__( 
+                    new _ExceptionIO( new CyString(file.getName()) ) );            
+                }
+                *}
+            }
+            else {
+                return false
+            }
+        
+        
+    }
+  
+    override
+    func hashCode -> Int { 
+        @javacode<<<
+            return new CyInt(file.hashCode());
+        >>>
+    }
+    
+    override
+    func asString -> String {
+        @javacode{*
+            return new CyString(file.toString());
+        *}
+        
+    }
+  
+    @javacode{*
+    File file;        
+    *}
+
+
+end
+

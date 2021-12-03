@@ -1,0 +1,77 @@
+package cyan.math
+
+object Math
+
+    func abs: Double x -> Double {
+        @javacode{*
+            return new CyDouble( java.lang.Math.abs(_x.n) );
+        *}
+    }
+
+    func sin: Double x -> Double {
+        @javacode{*
+            return new CyDouble( java.lang.Math.sin(_x.n) );
+        *}
+    }
+    
+    func cos: Double x -> Double {
+        @javacode{*
+            return new CyDouble( java.lang.Math.cos(_x.n) );
+        *}
+    }
+
+    func exp: Double x -> Double {
+        @javacode{*
+            return new CyDouble( java.lang.Math.exp(_x.n) );
+        *}
+    }
+
+    func exp: Double x -> Double {
+        @javacode{*
+            return new CyDouble( java.lang.Math.exp(_x.n) );
+        *}
+    }
+
+    func log: Double x -> Double {
+        @javacode{*
+            return new CyDouble( java.lang.Math.log(_x.n) );
+        *}
+    }
+
+
+    func log10: Double x -> Double {
+        @javacode{*
+            return new CyDouble( java.lang.Math.log10(_x.n) );
+        *}
+    }
+
+
+
+    func floor: Double x -> Double {
+        @javacode{*
+            return new CyDouble( java.lang.Math.floor(_x.n) );
+        *}
+    }
+
+
+    func ceil: Double x -> Double {
+        @javacode{*
+            return new CyDouble( java.lang.Math.ceil(_x.n) );
+        *}
+    }
+
+    func random -> Double {
+        @javacode{*
+            return new CyDouble( java.lang.Math.random() );
+        *}
+    }
+
+
+
+    func sqrt: Double x -> Double { 
+        @javacode{*
+            return new CyDouble( java.lang.Math.sqrt(_x.n) );
+        *}
+    }
+    
+end

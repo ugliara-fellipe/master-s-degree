@@ -1,0 +1,195 @@
+/*
+ * Eduardo Romao da Rocha
+ */
+
+package cyan.lang
+
+@javacode{* 
+    import java.util.*;
+*}
+
+object FSM
+    @javacode{* 
+        String currentState;
+        String initialState;
+        ArrayList<ArrayList<Object>> tupleList;
+    *}
+    
+    func init { 
+    
+    }
+    
+    func init: String str { 
+        @javacode{* 
+            String fsmDescr = _str.s;
+            StringTokenizer st = new StringTokenizer(fsmDescr, "\n");
+            tupleList = new java.util.ArrayList<>();
+            int count = 0;
+            
+            while(st.hasMoreElements()){
+                String tk = new String(st.nextElement() + "");
+                java.util.StringTokenizer st2 = new java.util.StringTokenizer(tk, ",");
+                java.util.ArrayList<Object> auxList = new java.util.ArrayList<>();
+                
+                while(st2.hasMoreElements()){
+                    String tk2 = new String(st2.nextElement() + "");
+                    if(count == 0) initialState = tk2;
+                    count++;
+                    auxList.add(tk2);
+                }
+                
+                currentState = initialState;
+                tupleList.add(auxList);
+            }
+        *}
+    }
+    
+    func add: String srcState, String inp, String dstState, Function<Nil> anonFunc {
+        @javacode{* 
+        ArrayList<Object> auxList = new ArrayList<>();
+        auxList.add(_srcState.s);
+        auxList.add(_inp.s);
+        auxList.add(_dstState.s);
+        auxList.add(_anonFunc);
+        
+        tupleList.add(auxList);
+        *}
+        ^Nil;
+    }
+    
+    func getCurrentState -> String { 
+        @javacode{* 
+            return new CyString(currentState);
+        *}
+    }
+    
+    func setCurrentState: String str { 
+        @javacode{* 
+            currentState = _str.s;
+        *}
+        ^Nil
+    }
+    
+    func getInitialState -> String { 
+        @javacode{* 
+            return new CyString(initialState);
+        *}
+    }
+    
+    func setInitialState: String inSt { 
+        @javacode{* 
+            initialState = _inSt.s;
+        *}
+        ^Nil
+    }
+    
+    func processInput: String inp -> String { 
+        @javacode{* 
+            boolean flag = false;
+            boolean flag2 = false;
+            java.util.ArrayList<ArrayList<Object>> auxList = new java.util.ArrayList<>();
+            
+            for(java.util.ArrayList<Object> l: tupleList){
+                if(l.get(0).equals(currentState)){
+                    auxList.add(l);
+                    flag2 = true;
+                }
+            }
+            
+            if(!flag2) return null;
+            
+            for(java.util.ArrayList<Object> l2: auxList){
+                if(l2.get(1).toString().equals(_inp.s)){
+                    //se flag == true, um estado possui mais de uma transicao definida
+                    //para uma mesma entrada inp, o que eh invalido
+                    //assim, retornamos null
+                    if(flag) return null;
+                    flag = true;
+                    
+                    //O novo estado atual, dado pelo estado destino da transicao
+                    currentState = l2.get(2).toString();
+                    
+                    //Executando a funcao anonima passada como parametro
+                    //TODO
+                }
+            }
+            
+            return new CyString(currentState);
+        *}
+    }
+    
+    overload
+    func eval: String inp -> Boolean { 
+        @javacode{* 
+            int len = _inp.s.length();
+            java.util.ArrayList<ArrayList<Object>> auxList = new java.util.ArrayList<>();
+            currentState = initialState;
+            
+            for(int i = 0; i < len; i++){
+                String c = new String(_inp.s.charAt(i) + "");
+                
+                for(java.util.ArrayList<Object> l: tupleList){
+                    
+                    if(l.get(0).toString().equals(currentState)){
+                        auxList.add(l);
+                    }
+                }
+                
+                boolean flag = false;
+                
+                for(java.util.ArrayList<Object> l2: auxList){
+                    if(l2.get(1).toString().equals(c)){
+                        if(flag) return new CyBoolean(false);
+                        flag = true;
+                    }
+                    
+                    currentState = l2.get(2).toString();
+                }
+                
+                if(!flag) return new CyBoolean(false);
+            }
+            
+            return new CyBoolean(true);
+        *}
+    }
+    func eval: Array<String> arr -> Boolean { 
+        @javacode{* 
+            /*ArrayList arr_array_strings = new ArrayList<>();
+            for(CyString cs: _arr.array){
+                arr_array_strings.add(cs.s);
+            }*/
+            
+            currentState = initialState;
+            ArrayList<ArrayList<Object>> auxList = new ArrayList<>();
+            
+            //verificar a representacao de Array<String> em cyan
+            //para ver como acessar o java dentro dele
+            for(CyString cstr: _arr.array){
+                //java.util.ArrayList<Object> auxList = new java.util.ArrayList<>();
+                String str = cstr.s;
+                
+                for(java.util.ArrayList<Object> l: tupleList){
+                    if(l.get(0).toString().equals(currentState)){
+                        auxList.add(l);
+                    }
+                }
+                
+                boolean flag = false;
+                
+                for(ArrayList<Object> l2: auxList){
+                    if(l2.get(1).toString().equals(str)){
+                        if(flag) return new CyBoolean(false);
+                        flag = true;
+                    }
+                    
+                    currentState = l2.get(2).toString();
+                }
+                
+                if(!flag) return new CyBoolean(false);
+            }
+            
+            return new CyBoolean(true);
+        *}
+    }
+
+end

@@ -1,0 +1,9 @@
+package cyan.lang
+
+object Println<T> extends Function<T, Nil>
+
+    override
+    func eval: T t {
+        t println
+    }
+end

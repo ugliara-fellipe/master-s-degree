@@ -1,0 +1,28 @@
+package main
+
+object Tile extends Entity
+
+  var Int typeId
+
+  func init {
+    self.typeId = Const FLOOR;
+  }
+
+  func setType: Int typeId {
+    self.typeId = typeId;
+  }
+  
+  override func getType -> Int {
+    return self.typeId;
+  }
+  
+  override func draw {
+    if self.typeId == Const OBSTACLE {
+      MapCanvas write: "#";
+    }
+    else if self.typeId == Const FLOOR {
+      MapCanvas write: ".";
+    }
+  }
+  
+end

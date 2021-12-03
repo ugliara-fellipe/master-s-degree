@@ -1,0 +1,333 @@
+package cyan.io
+
+    
+@javacode{*
+import java.io.*;
+*}
+
+@doc{*
+
+   All prototypes of package cyan.io have not been tested. Use them
+   at your own risk.
+
+*}
+
+object InTextFile
+
+    func init: String filename {
+        self.filename = filename;
+        @javacode{*
+        try { 
+            file = new java.io.BufferedReader(new FileReader(_filename.s));
+        }
+        catch ( FileNotFoundException e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionFileNotFound( _filename ) );            
+        }
+        *}
+        
+    }
+    
+    func foreach: Function<String, Nil> f {
+
+        
+        @javacode{*
+
+            try { 
+        
+                String line; 
+                while ( (line = file.readLine()) != null ) {
+                        _f._eval_1( new CyString(line) );
+                }
+            }
+            catch (IOException e) {
+                throw new ExceptionContainer__( 
+                    new _ExceptionIO( _filename ) );            
+            }                   
+            finally {
+                try {
+                    file.close();
+                }
+                catch (IOException e) {
+                    throw new ExceptionContainer__( 
+                        new _ExceptionIO( _filename ) );            
+                }                   
+                            
+            }
+                    
+        *}
+        return Nil
+
+    }
+    
+    func readLine -> String|Nil {
+        var Boolean ok = true;
+        var String s;
+        @javacode{*
+        
+            _s = null;
+            try { 
+                String line = file.readLine();
+                if ( line == null ) { _ok = CyBoolean.cyFalse; }
+                else {
+                    _s = new CyString(line);
+                }
+            }
+            catch ( IOException e ) {
+                throw new ExceptionContainer__( 
+                    new _ExceptionIO( _filename ) );            
+            }
+                    
+        *}
+        if ok { return s } else { return Nil }
+    }
+
+    func readFile -> String|Nil {
+        
+        var Boolean ok = true;
+        var String s;
+        
+        @javacode{*
+            _s = null;
+            try { 
+                StringBuilder sb = new StringBuilder();
+                String line; 
+                while ( (line = file.readLine()) != null ) {
+                        sb.append(line);
+                }
+                if ( sb.length() == 0 ) { _ok = CyBoolean.cyFalse; } 
+                else { 
+                    _s = new CyString(sb.toString());
+                }
+            }
+            catch (IOException e) {
+                throw new ExceptionContainer__( 
+                    new _ExceptionIO( _filename ) );            
+            }                   
+            finally {
+                try {
+                    file.close();
+                }
+                catch (IOException e) {
+                    throw new ExceptionContainer__( 
+                        new _ExceptionIO( _filename ) );            
+                }                   
+                            
+            }
+            
+        *}
+        if ok { return s } else { return Nil }
+    }
+
+
+    func readLines -> Array<String> {
+        
+        let strArray = Array<String>();
+        
+        @javacode{*
+            try { 
+                String line; 
+                while ( (line = file.readLine()) != null ) {
+                        _strArray._add_1( new CyString(line) );
+                }
+            }
+            catch (IOException e) {
+                throw new ExceptionContainer__( 
+                    new _ExceptionIO( _filename ) );            
+            }                  
+            finally {
+                try {
+                    file.close();
+                }
+                catch (IOException e) {
+                    throw new ExceptionContainer__( 
+                        new _ExceptionIO( _filename ) );            
+                }                   
+                            
+            }
+             
+        *}
+        return strArray;
+    }
+
+
+
+    @checkCatchParameter
+    func readFile: catch: Any catchObj -> String|Nil {
+        var Boolean ok;
+        var String s;
+    
+        {
+            s = "";   
+            ok = true;         
+            @javacode{*
+                try { 
+                    StringBuilder sb = new StringBuilder();
+                    String line; 
+                    while ( (line = file.readLine()) != null ) {
+                            sb.append(line);
+                    }
+                    if ( sb.length() == 0 ) { _ok = new Ref<CyBoolean>(CyBoolean.cyFalse); } 
+                    else { 
+                        _s = new Ref<CyString>(new CyString(sb.toString()));
+                    }
+                }
+                catch (IOException e) {
+                    throw new ExceptionContainer__( 
+                        new _ExceptionIO( _filename ) );            
+                }                   
+                finally {
+                    try {
+                        file.close();
+                    }
+                    catch (IOException e) {
+                        throw new ExceptionContainer__( 
+                            new _ExceptionIO( _filename ) );            
+                    }                   
+                                
+                }
+            *}
+            ^Nil
+        }
+        catch: { (: CyException e :) 
+            catchObj ?eval: e;
+            ok = false;
+        };
+        if ok { return s } else { return Nil }
+        
+    }
+
+
+
+    @prototypeCallOnly
+    @checkCatchParameter
+    func open: String filename 
+         readFile: 
+         catch: Any catchObj -> String|Nil {
+         
+        var String|Nil ret = Nil;
+        let f = InTextFile(filename);
+        {
+            ret = f readFile;
+        }
+        catch: { (: CyException e :) 
+            catchObj ?eval: e;
+        }
+        finally: {
+            f close
+        };
+        return ret;
+        
+    }
+
+
+    @prototypeCallOnly
+    @checkCatchParameter
+    func open: String filename 
+         readLines:  
+         catch: Any catchObj
+         -> Array<String> {
+         
+        var InTextFile|Nil fcopy = Nil;
+        var Array<String> ret;
+        {
+            let InTextFile f = InTextFile(filename);
+            fcopy = f;
+            ret = f readLines;
+        }
+        catch: { (: CyException e :) 
+            catchObj ?eval: e;
+        }
+        finally: {
+            type fcopy 
+                case InTextFile inFile {
+                    inFile close
+                }
+                case Nil {
+                    ret = Array<String>();
+                }
+        };
+        return ret;
+    }
+
+
+    @prototypeCallOnly
+    @checkCatchParameter
+    func open: String filename 
+         foreach: Function<String, Nil> apply
+         catch: Any catchObj
+          {
+         
+        var InTextFile|Nil fcopy = Nil;
+        var Array<String> ret;
+        {
+            let InTextFile f = InTextFile(filename);
+            fcopy = f;
+            f foreach: apply
+        }
+        catch: { (: CyException e :) 
+            catchObj ?eval: e;
+        }
+        finally: {
+            type fcopy 
+                case InTextFile inFile {
+                    inFile close
+                }
+        };
+    }
+
+    @prototypeCallOnly
+    @checkCatchParameter
+    func open: String filename 
+         filter: Function<String, Boolean> filter
+         foreach: Function<String, Nil> apply
+         catch: Any catchObj  {
+         
+        var InTextFile|Nil fcopy = Nil;
+        var Array<String> ret;
+        {
+            let InTextFile f = InTextFile(filename);
+            fcopy = f;
+            f foreach: { (: String line :)
+                if filter eval: line {
+                    apply eval: line
+                }
+            }
+        }
+        catch: { (: CyException e :) 
+            catchObj ?eval: e;
+        }
+        finally: {
+            type fcopy 
+                case InTextFile inFile {
+                    inFile close
+                }
+        };
+    }
+
+
+
+
+    
+    func close {
+        @javacode{*
+        try { 
+            file.close();
+        }
+        catch ( IOException e ) {
+            throw new ExceptionContainer__( 
+                new _ExceptionIO( _filename ) );            
+        }        
+        *}
+        return Nil
+    }
+    
+    String filename
+    
+    @javacode{*
+    BufferedReader file;        
+    *}
+
+
+end
+

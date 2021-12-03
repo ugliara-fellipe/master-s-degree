@@ -1,0 +1,9 @@
+package cyan.lang
+
+
+public final object ExceptionDoesNotUnderstand(String _methodName) extends CyException
+
+    func methodName -> String = _methodName;
+
+end
+

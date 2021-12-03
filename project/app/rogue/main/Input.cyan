@@ -1,0 +1,7 @@
+package main
+
+object Input
+
+  func event: String text { }
+
+end

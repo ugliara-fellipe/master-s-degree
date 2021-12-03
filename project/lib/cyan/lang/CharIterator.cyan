@@ -1,0 +1,27 @@
+package cyan.lang
+
+object CharIterator implements Iterator<Char>
+    func init: String s {
+        self.s = s;
+        index = 0;
+    }
+    
+    override
+    func hasNext -> Boolean {
+        return index < (s size);
+    }
+    
+    override
+    func next -> Char {
+        if  index < (s size) {
+            ++index;
+            return s[index-1];
+        }
+        else {
+            throw: ExceptionIterator;
+        }
+    }
+    
+    String s
+    var Int index
+end

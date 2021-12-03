@@ -1,0 +1,58 @@
+package main
+
+import treplica
+
+object Program extends Input
+
+  var Board|Nil board;
+  var String temp1;
+  var String temp2;
+
+  func init {
+    board = Nil;
+    temp1 = "";
+    temp2 = "";
+  }
+
+  override func event: String text {
+    var Board local = Cast<Board> asReceiver: board;
+    if text size != 0 {
+      if text == "QUIT" {
+        Native exit;
+      }
+      else if text == "START" && (local isEnd) {
+        local startAction;
+      }
+      if local checkTurn {
+        if text[0] == 'S' && (text size) == 4 {
+          temp1 =  text substring: 2, text size;
+          local selectAction: temp1;
+        }
+        else if text[0] == 'A' && (text size) == 4 {
+          temp1 =  (text substring: 2, (text size));
+          local attackAction: temp1;
+        }
+        else if text[0] == 'M' && (text size) == 5 {
+          temp1 = (text substring: 2, 3);
+          temp2 = (text substring: 4, 5);
+          local moveAction: temp1, temp2;
+        }
+        else {
+          local messageAction: "Invalid Action :("
+        }
+      }
+    }
+  }
+
+  func run: Array<String> args {
+    Window build: self;
+  
+    var local = ("/var/tmp/magic" ++ args[1]);
+    @treplicaInit( 2, 200, local )
+	  var data = Board new: args[1];
+    data startBoard;
+    
+    board = data;
+  }
+
+end

@@ -1,0 +1,35 @@
+package cyan.lang
+
+object HashMapIterator<K, V> implements Iterator<Tuple<key, K, value, V>>
+
+    func init: HashMap<K, V> map {
+        s = Array<Tuple<key, K, value, V>> new;
+        let f = { (: Array<Tuple<key, K, value, V>> array, K kk, V vv :) 
+            array add: [. key = kk, value = vv .] };
+        @javacode{*
+            for ( java.util.Map.Entry<K, V> entry : _map.getHashMap().entrySet() ) {
+                _f._eval_3( _s, entry.getKey(), entry.getValue() );
+            }
+        *}
+        index = 0;
+    }    
+    
+    override
+    func hasNext -> Boolean {
+        return index < s size;
+    }
+    
+    override
+    func next -> Tuple<key, K, value, V> {
+        if  index < (s size) {
+            ++index;
+            return s[index-1];
+        }
+        else {
+            throw: ExceptionIterator;
+        }
+    }
+    
+    Array<Tuple<key, K, value, V>> s
+    var Int index
+end

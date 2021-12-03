@@ -1,0 +1,8 @@
+package cyan.lang
+
+object NEQ<T, FieldName, FieldType>(FieldType rightSide) extends FunctionFieldPipeBoolean<T, Boolean>
+
+    override
+    func eval: T leftSide -> Boolean = leftSide FieldName != rightSide;
+end
+

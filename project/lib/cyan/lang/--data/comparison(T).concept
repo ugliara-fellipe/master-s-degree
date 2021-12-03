@@ -1,0 +1,52 @@
+T has [ 
+    func <  T -> Boolean
+        "T should support the '< T -> Boolean' operator",
+    func <= T -> Boolean
+    func >  T -> Boolean
+    func >= T -> Boolean
+], "T should support the comparison operators '<', '<=', '>', and '>='",
+
+equatable(T),
+
+axiom comparisonTest: T a, T b, T c {%
+    var String s = "";
+    if a < a || b < b || c < c {
+        s = s ++ "method '<' of T considered that $a < $a or $b < $b or $c < $c\n";
+    }
+    if a < b && b < a {
+        s = s ++ "method '<' of T considered that $a < $a and $b < $a\n";
+    }
+    if a < b && b < c && !(a < c) {
+        s = s ++ "method '<' of T considered that $a < $b, $b < $c but it did consider $a >= c$\n"
+    }
+    if !( a <= a && b <= b && c <= c) {
+        s = s ++ "method '<=' of T considered that one of the following is false: " ++ 
+            "$a <= $a or $b <= $b or $c <= $c\n";
+    }
+    if a <= b && b <= c && !(a <= c) {
+        s = s ++ "method '<=' of T considered that $a <= $b, $b <= $c but it did consider $a > c$\n"
+    }
+
+
+    if a > a || b > b || c > c {
+        s = s ++ "method '>' of T considered that $a > $a or $b > $b or $c > $c\n";
+    }
+    if a > b && b > a {
+        s = s ++ "method '>' of T considered that $a > $a and $b > $a\n";
+    }
+    if a > b && b > c && !(a > c) {
+        s = s ++ "method '>' of T considered that $a > $b, $b > $c but it did consider $a <= c$\n"
+    }
+    if !( a >= a && b >= b && c >= c) {
+        s = s ++ "method '>=' of T considered that one of the following is false: " ++ 
+            "$a >= $a or $b >= $b or $c >= $c\n";
+    }
+    if a >= b && b >= c && !(a >= c) {
+        s = s ++ "method '>=' of T considered that $a >= $b, $b >= $c but it did consider $a < c$\n"
+    }
+    if s == "" { return Nil }
+    else {
+        return s
+    }
+%}
+

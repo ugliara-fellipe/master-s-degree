@@ -1,0 +1,9 @@
+package cyan.math
+
+object Cos
+
+    fun eval: Double x -> Double {
+        return Math cos: x
+    }
+
+end

@@ -1,0 +1,11 @@
+package main
+
+object Entity
+  
+  func getType -> Int { 
+    return Const ENTITY;
+  }
+  
+  func draw { }
+
+end

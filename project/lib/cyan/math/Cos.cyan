@@ -1,0 +1,10 @@
+package cyan.math
+
+object Cos extends Function<Double, Double>
+
+    override
+    func eval: Double x -> Double {
+        return Math cos: x
+    }
+
+end

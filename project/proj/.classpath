@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path=""/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="C:/Users/felli/Documents/projeto.qualificacao.fellipe/media/jar/commons-io-2.4.jar"/>
+	<classpathentry kind="lib" path="C:/Users/felli/Documents/projeto.qualificacao.fellipe/media/jar/commons-io-2.4-javadoc.jar"/>
+	<classpathentry kind="lib" path="C:/Users/felli/Documents/projeto.qualificacao.fellipe/media/jar/commons-lang3-3.2.1.jar"/>
+	<classpathentry kind="lib" path="C:/Users/felli/Documents/projeto.qualificacao.fellipe/media/jar/commons-lang3-3.2.1-javadoc.jar"/>
+	<classpathentry kind="lib" path="C:/Users/felli/Documents/projeto.qualificacao.fellipe/media/jar/gson-2.6.2.jar"/>
+	<classpathentry kind="lib" path="C:/Users/felli/Documents/projeto.qualificacao.fellipe/media/jar/guava-17.0.jar"/>
+	<classpathentry kind="lib" path="C:/Users/felli/Documents/projeto.qualificacao.fellipe/media/jar/java-json.jar"/>
+	<classpathentry kind="lib" path="C:/Users/felli/Documents/projeto.qualificacao.fellipe/media/jar/javassist.jar"/>
+	<classpathentry kind="lib" path="C:/Users/felli/Documents/projeto.qualificacao.fellipe/media/jar/jgraphx.jar"/>
+	<classpathentry kind="lib" path="C:/Users/felli/Documents/projeto.qualificacao.fellipe/media/jar/jtidy-r938.jar"/>
+	<classpathentry kind="lib" path="C:/Users/felli/Documents/projeto.qualificacao.fellipe/media/jar/reflections-0.9.10.jar"/>
+	<classpathentry kind="lib" path="C:/Users/felli/Documents/projeto.qualificacao.fellipe/media/jar/slf4j-api-1.7.18.jar"/>
+	<classpathentry kind="lib" path="C:/Users/felli/Documents/projeto.qualificacao.fellipe/media/jar/slf4j-jdk14-1.7.18.jar"/>
+	<classpathentry kind="lib" path="C:/Users/felli/Documents/projeto.qualificacao.fellipe/media/jar/treplica-0.1.0.jar"/>
+	<classpathentry kind="output" path=""/>
+</classpath>

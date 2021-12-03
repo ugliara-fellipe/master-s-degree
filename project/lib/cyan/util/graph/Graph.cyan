@@ -1,0 +1,37 @@
+package cyan.util.graph
+
+/*  someone has to do this prototype!
+*/
+object Graph
+    func init { 
+        vertexSet = Set<Vertex>();
+        edgeSet = Set<Edge>();
+    }
+    
+    func addNumberEdge: Int a, Int b {
+        let start = Vertex(a asString);
+        let theEnd = Vertex(b asString);
+        addEdge: start, theEnd
+    }
+    
+    
+    
+    func addEdge: Vertex a, Vertex b { 
+        vertexSet add: a;
+        vertexSet add: b;
+        edgeSet add: Edge(a, b);
+    }
+    
+    func addEdge: Edge edge {
+        vertexSet add: edge start;
+        vertexSet add: edge theEnd;
+        edgeSet add: edge;
+    }
+    
+    func connected -> Boolean { ^true }
+    
+    Set<Vertex> vertexSet
+    Set<Edge> edgeSet
+    
+end
+

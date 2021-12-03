@@ -1,0 +1,10 @@
+package cyan.script
+
+object TextFile
+    fun init: String filename {
+    }
+    
+    fun foreach: Function<TextLine, TextLine> { 
+    }
+end
+

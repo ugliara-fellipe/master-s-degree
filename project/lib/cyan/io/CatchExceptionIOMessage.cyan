@@ -1,0 +1,14 @@
+package cyan.io
+
+object CatchExceptionIOMessage
+
+    overload
+    func eval: ExceptionFileNotFound e {
+        ("File " ++ e filename ++ " was not found") println;        
+    }
+    func eval: ExceptionIO e {
+        ("I/O error when handling file " ++ e filename ) println;        
+    }
+    
+end
+

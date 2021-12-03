@@ -1,0 +1,11 @@
+package treplica
+
+object Deterministic
+  func random -> Double {
+    return 1.0;
+  }
+
+  func testok: String value {
+    Out println: "testok: " ++ value;
+  }
+end

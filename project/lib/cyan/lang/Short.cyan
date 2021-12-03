@@ -1,0 +1,234 @@
+package cyan.lang
+
+ final object Short
+    @javacode<<<
+         public short n = 0;
+         public CyShort(int n) { this.n = (short ) n; }
+    >>>
+
+    func init {
+        @javacode{* n = 0; *}
+    }
+    
+
+
+    override
+    func eq:  (Dyn other) -> Boolean { 
+        @javacode<<< 
+            try {
+                return new CyBoolean(n == (((CyShort ) _other).n)) ; 
+            }
+            catch ( ClassCastException e ) {
+            }
+        >>> 
+        return false;
+    }
+
+    override
+    func neq: (Dyn other) -> Boolean { 
+        @javacode<<< 
+            try {
+                return new CyBoolean(n != (((CyShort ) _other).n)) ; 
+            }
+            catch ( ClassCastException e ) {
+            }
+        >>> 
+        return false;
+    }
+    
+
+    func +  (Short other) -> Short { @javacode<<< return new CyShort(n + _other.n); >>> }
+    func -  (Short other) -> Short { @javacode<<< return new CyShort(n - _other.n); >>> }
+    func *  (Short other) -> Short { @javacode<<< return new CyShort(n * _other.n); >>> }
+    func /  (Short other) -> Short { @javacode<<< return new CyShort(n / _other.n); >>> }
+    func %  (Short other) -> Short { @javacode<<< return new CyShort(n % _other.n); >>> }
+    func <  (Short other) -> Boolean { @javacode<<< return new CyBoolean(n <  _other.n); >>> }
+    func <= (Short other) -> Boolean { @javacode<<< return new CyBoolean(n <= _other.n); >>> }
+    func >  (Short other) -> Boolean { @javacode<<< return new CyBoolean(n >  _other.n); >>> }
+    func >= (Short other) -> Boolean { @javacode<<< return new CyBoolean(n >= _other.n); >>> }
+
+   
+    func pred -> Short {
+        @javacode{* return new CyShort( n - 1 ); *}
+    }
+
+    func succ -> Short {
+        @javacode{* return new CyShort( n + 1 ); *}
+    }
+  
+   
+    func maxValue -> Short {
+       @javacode{* return new CyShort( Short.MAX_VALUE ); *}
+    }
+    
+
+    func minValue -> Short {
+       @javacode{* return new CyShort( Short.MIN_VALUE ); *}
+    }
+    
+    
+    override
+    func == (Dyn other)  -> Boolean { 
+        @javacode<<< 
+            long other;
+            if ( _other instanceof CyByte ) 
+                other = ((CyByte ) _other).n;
+            else if ( _other instanceof CyInt )
+                other = ((CyInt ) _other).n;
+            else if ( _other instanceof CyShort )
+                other = ((CyShort ) _other).n;
+            else if ( _other instanceof CyLong ) {
+                other = ((CyLong ) _other).n;
+            }
+            else if ( _other instanceof CyFloat ) {
+                float otherFloat = ((CyFloat ) _other).n;
+                if ( (float ) n == otherFloat )
+                    return CyBoolean.cyTrue;
+                else
+                    return CyBoolean.cyFalse;
+            }
+            else if ( _other instanceof CyDouble ) {
+                double otherDouble = ((CyDouble ) _other).n;
+                if ( (double ) n == otherDouble )
+                    return CyBoolean.cyTrue;
+                else
+                    return CyBoolean.cyFalse;
+            }
+            else
+                return CyBoolean.cyFalse;
+                
+            if ( other == (long ) n )
+                return CyBoolean.cyTrue;
+            else
+                return CyBoolean.cyFalse;
+        >>> 
+    }
+    
+    override
+    func != (Dyn other)  -> Boolean { 
+        if self == other { return false } else { return true }
+    }
+     
+   
+    func <=> (Short other) -> Int {  
+        if self < other { return -1 } 
+        else if self > other { return 1 }
+        else { 
+           return 0
+        }
+    }
+    func .. (Short theEnd) -> Interval<Short> {  
+        return Interval<Short> new: self, theEnd
+    } 
+    func ..< (Short theEnd) -> Interval<Short> {  
+        return Interval<Short> new: self, (theEnd - 1S);
+    } 
+
+    
+    
+       // all unary operators are prefixed
+    func -   -> Short { @javacode<<< return new CyShort(-n); >>> }
+    func +   -> Short { @javacode<<< return this; >>> }
+       // and bit to bit
+    func & (Short other) -> Short { @javacode<<< return new CyShort(n & _other.n); >>> }
+       // or bit to bit
+    func | (Short other) -> Short { @javacode<<< return new CyShort(n | _other.n); >>> }
+        // exclusive or bit to bit
+    func ~| (Short other) -> Short { @javacode<<< return new CyShort(n ^ _other.n); >>> }
+        // binary not
+    func ~ -> Short { @javacode<<< return new CyShort(~n); >>> }
+
+
+    func |> Function<Short, Short> f -> Short {
+        return f eval: self
+    }
+       
+    
+
+
+    func asByte   -> Byte { @javacode<<< return new CyByte( (byte) n ); >>> }
+    func asInt    -> Int { @javacode<<< return new CyInt( (int ) n ); >>> }
+    func asLong   -> Long { @javacode<<< return new CyLong( (long) n); >>> }
+    func asFloat  -> Float { @javacode<<< return new CyFloat( (float) n ); >>> }
+    func asDouble -> Double { @javacode<<< return new CyDouble( (double ) n ); >>> }
+    func asChar   -> Char { @javacode<<< return new CyChar( (char ) n); >>> }
+    func asBoolean -> Boolean { @javacode<<< return new CyBoolean( n == 0 ? false : true ); >>> }
+    
+    override
+    func asString -> String { @javacode<<< return new CyString(n + ""); >>> }
+
+    func to: (Short max) do: (Function<Short, Nil> b) {
+        var Short i = self;
+        while i <= max {
+            b eval: i;
+            ++i
+        }
+    }
+    
+       // injection method to be used with context object.
+       // the initial value is private to injectTo
+    func to: (Short max) into: (InjectObject<Short> injectTo) {
+        var Short i = self;
+        while i <= max {
+            injectTo eval: i;
+            ++i
+        };
+    }
+
+    func times: Function<Nil> b {
+        var Short i = 0Short;
+        while i < self {
+            b eval;
+            ++i;
+        }
+    }
+    
+    func repeat: Function<Short, Nil> b {
+        var Short i = 0Short;
+        while i < self {
+            b eval: i;
+            ++i;
+        }
+    }
+
+    func to: (Short max)
+        inject: (Short initialValue)
+        into: (Function<Short, Short, Short> b) 
+        -> Short {
+        var Short i = self;
+        var Short total = initialValue;
+        while i <= max {
+            total = b eval: total, i;
+            ++i
+        };
+        return total
+    }
+        
+    func in: (Iterable<Short> container) -> Boolean {
+        for item in container {
+            if self == item {
+                return true;
+            }
+        };
+        return false;
+    }
+
+    func between: Interval<Short> inter -> Boolean {
+        return self >= inter first && self <= inter last
+    }
+
+    override
+    func hashCode -> Int { 
+        @javacode<<<
+            return new CyInt(n);
+        >>>
+    }
+    
+
+
+    func defaultValue -> Short {
+        return 0S;
+    }       
+    
+end
+

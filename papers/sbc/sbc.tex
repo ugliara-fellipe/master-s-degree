@@ -1,0 +1,420 @@
+\documentclass[12pt]{article}
+
+\usepackage{sbc}
+\usepackage{graphicx,url}
+\usepackage[utf8]{inputenc}
+\usepackage[brazil]{babel} 
+
+\usepackage{ragged2e}
+\usepackage{tikz}
+\usepackage{ulem}
+\usepackage{listings}
+\usepackage{parcolumns}
+\usepackage{amsmath,amssymb,latexsym}
+\usepackage{pgf-umlsd}
+
+\definecolor{britishracinggreen}{rgb}{0.0, 0.26, 0.15}
+
+\tikzset{
+	box/.style={draw=black!60, thick, rectangle, minimum height=4cm, minimum width=4cm}
+}
+
+\sloppy
+
+\title{Replicação Orientada a Metaprogramação}
+
+\author{Fellipe Augusto Ugliara\inst{1}\\
+	{\normalfont Orientador:} Prof. Dr. José de Oliveira Guimarães\inst{1}\\
+	{\normalfont Coorientador:} Prof. Dr. Gustavo Maciel Dias Vieira\inst{1} }
+
+
+\address{Universidade Federal de São Carlos (UFSCar)\\
+  Sorocaba -- SP -- Brasil \\
+  Programa de Pós-Graduação em Ciência da Computação -- PPGCC-So
+}
+
+\begin{document} 
+
+\maketitle
+
+\begin{resumo} 
+	Replicar dados é uma técnica muito poderosa usada pela computação
+        distribuída. O conceito de metaprogramação pode ser aplicado 
+	em diferentes contextos, neste trabalho ele está relacionado a compilação das aplicações 
+	que pretendemos replicar. A metaprogramação permite que em determinadas etapas 
+	de compilação o código-fonte de uma aplicação não replicada
+	seja usado para gerar um código-fonte no qual essa mesma 
+	aplicação seja replicável. Outras ações de validação também podem ser 
+	realizadas  durante  a  geração   desse  código-fonte,  com  a
+        intenção de alertar sobre possíveis 
+	problemas existentes nos códigos-fonte originais. Nesse trabalho é discutida 
+	uma possível solução de como validar se um código-fonte é determinista, uma 
+	característica necessária do código-fonte de uma
+	aplicação replicável. A contribuição desse trabalho é mostrar que a 
+	metaprogramação pode auxiliar na implementação de aplicações replicadas, 
+	como também instigar abordagens similares que possam ser aplicadas a 
+	programação de outros requisitos não funcionais.
+\end{resumo}
+
+
+\begin{abstract}
+	Data  replication  is  a  powerful  technique  of  distributed
+        computing. The concept of metaprogramming can be implemented 
+	in different contexts; in this work it is related to the compilation of applications 
+	we intend to replicate. In certain compilation steps metaprogramming allows 
+	the source code of a centralized application 
+	to be used to generate a source code in which the same application is replicated.
+	Other validation actions can also be performed during this source code 
+	generation in order to warn the user about problems that possibly exist in 
+	the original source code. In this work, a possible solution of how to 
+	validate if a source code is deterministic is discussed, since it is a necessary 
+	characteristic of the source code of a replicable application. 
+	This work aims to not only show that metaprogramming can help the implementation 
+	of replicated applications, but also instigate similar approaches that can be 
+	employed in the programming of other non-functional requirements.
+\end{abstract}
+
+\section{Introdução e Motivação} 
+
+A implementação de replicação em uma aplicação tem como objetivo melhorar a 
+confiabilidade, tolerância a falhas e acessibilidade dessa aplicação.
+O requisito de confiabilidade define que ela estará disponível a 
+qualquer momento que um usuário precise utiliza-lá, tolerância a falhas garante 
+que caso a aplicação sofra um mal súbito ela poderá retomar a execução do ponto 
+onde esse problema ocorreu, e acessibilidade define que um usuário poderá acessar 
+a aplicação de qualquer local que for necessário. 
+
+A replicação é um requisito não funcional que resolve problemas referentes
+a tecnologia e não ao domínio para o qual uma aplicação é desenvolvida. Os mesmos 
+requisitos não funcionais pode ser atribuídos a aplicações de domínios diferentes.
+Uma aplicação financeira pode implementar replicação para atender aos requisitos
+mencionados, assim como uma aplicação de comercio eletrônico pode usar dessa
+mesma implementação de replicação para atender a esses mesmos requisitos não
+funcionais.  
+ 
+Como a replicação não é a motivação primária do desenvolvimento de uma aplicação,
+o desejo é que a implementação da replicação seja o mais coeso e menos acoplado 
+possível com o restante do código-fonte implementado. A coesão da implementação
+é uma métrica que define se as partes (módulos, componentes) do código-fonte de 
+uma aplicação tratam cada uma de um único assunto (problema, objetivo, funcionalidade). 
+O acoplamento é uma métrica usada para definir o quanto dependente são essas partes 
+do código-fonte. Para que essas partes de código-fonte sejam reutilizáveis e de 
+fácil manutenção elas devem ser mais coesas e menos acopladas.
+
+\begin{center}
+\begin{tikzpicture}[yscale=-1,scale=1.3]
+
+\node[anchor=north, align=left, font=\small] at (4.5,1) {Código-Fonte\\- Replicação\\- Metaprogramação};
+\node[anchor=north, align=left, font=\small] at (8.5,1) {Código-Fonte\\+ Replicação\\- Metaprogramação};
+\node[anchor=north, align=left, font=\small] at (12.4,1) {Código-Fonte\\+ Replicação\\+ Metaprogramação};
+
+\begin{scope}[shift={(0,1.5)}]
+\filldraw[box, fill=red!20] (4,2) circle (0.8cm);
+\filldraw[box, fill=red!20] (8.3,2) circle (0.8cm);
+\filldraw[box, fill=red!20] (12.4,2) circle (0.8cm);
+
+\filldraw[box, fill=yellow!20, fill opacity=0.7] (13.3,2.4) circle (0.4cm);
+\filldraw[box, fill=yellow!20, fill opacity=0.7] (8.6,2.4) circle (0.4cm);
+\end{scope}
+
+\node[anchor=north, align=left, font=\small] at (3.9,4.5) {+ Coeso\\- Acoplado};
+\node[anchor=north, align=left, font=\small] at (8.5,4.5) {- Coeso\\+ Acoplado};
+\node[anchor=north, align=left, font=\small] at (12.5,4.5) {+ Coeso\\- Acoplado};
+
+\begin{scope}[shift={(2.15,1.5)}]
+\begin{scope}[shift={(0,0)}]
+\filldraw[box, fill=red!20] (1,4.5) rectangle (1.25,4.75);
+\node[anchor=west] at (1.2,4.65) {Programa};
+\end{scope}
+\begin{scope}[shift={(2.5,0)}]
+\filldraw[box, fill=yellow!20] (1,4.5) rectangle (1.25,4.75);
+\node[anchor=west] at (1.2,4.65) {Replicação};
+\end{scope}
+\end{scope}
+
+\end{tikzpicture}
+\end{center}
+
+A motivação desse trabalho é mostrar como a metaprogramação em compilação pode 
+auxiliar na implementação de aplicações replicáveis, tornando os códigos-fonte  
+dessas implementações mais coesos e menos acoplados~\cite{fellipe:2018}. O prefixo 
+`meta' em metaprogramação
+define uma referencia a si mesmo, como em metadados que são os dados que contêm 
+informação a respeito dos próprios dados. Metaprogramação é o conceito que permite 
+definir programas que referenciam entidades da própria programação (compiladores, 
+interpretadores, códigos-fonte, programas, elementos da linguagem utilizada)
+\cite{taxonomy:2015}, para definir como esses programas devem ser 
+trabalhados por essas entidades.
+
+Neste trabalho, usando metaprogramação em compilação, foi possível desenvolver 
+programas sem replicação que durante a compilação são usados como entrada para 
+gerar novos programas com replicação~\cite{metaobject:2018}. 
+Esses novos programas também mantêm as
+funcionalidades dos programas originais. Na compilação  foi possível verificar
+esses programas na busca de trechos de código-fonte não deterministas que possam 
+levar as aplicações replicadas a apresentarem problemas durante a 
+execução.
+
+O determinismo em aplicações replicadas é necessário porque cada ação gerada em 
+uma réplica dessa aplicação será compartilhada com as demais réplicas que estiverem 
+vinculadas a um mesmo grupo de execução. Caso essas ações não sejam deterministas 
+as réplicas poderão assumir comportamentos diferentes o que tornaria a execução 
+desse grupo de réplicas inconsistente~\cite{vieira:2010}. 
+Um grupo de execução é um conjunto de 
+réplicas, de uma mesma aplicação, que estão vinculadas a uma mesma execução. 
+
+Todas as réplicas de um grupo de execução serão iguais, assim se uma réplica 
+sofrer um mal súbito ela poderá ser recriada a partir de outra réplica que esteja 
+no mesmo grupo, o que melhora a tolerância a falhas das aplicações. As requisições 
+dos usuários de aplicações replicadas podem ser distribuídas entre as réplicas 
+para melhorar a confiabilidade. As réplicas também podem ser executadas em pontos 
+geográficos diferentes para melhorar a acessibilidade dessas aplicações.
+
+\begin{center}
+\begin{tikzpicture}[yscale=-1,scale=1.35]
+%\draw [gray,very thin] (0,0) grid (10.8,4);
+
+\node[anchor=north] at (1.5,0.15) {\uline{Programa Não Replicado}};
+
+\node[anchor=north] at (1.5,1) {Instância Única};
+
+\begin{scope}[scale=0.8, shift={(0.38,0.5)}]
+\filldraw[box, fill=red!20] (1,1.5) rectangle (2,2.5);
+\filldraw[box, fill=blue!20] (1,2) rectangle (1.5,2.5);
+\end{scope}
+
+\begin{scope}
+\draw[->, thick, draw=black!70] (0,3.5) -- (3,3.5);
+\filldraw[fill=black!70, draw=black!70] (0.05,3.5) circle (1.5pt);
+\end{scope}
+
+\filldraw[fill=black!70, draw=black!70] (1.3,2.2) circle (1.5pt);
+
+\begin{scope}
+\draw[->, thick, draw=black!70] (1.3,2.2) -- (1.3,3.4);
+\node[anchor=north west] at (1.25,2.65) {Execução};
+\filldraw[fill=blue!20, draw=black!70] (1.3,3.5) circle (2pt);
+\end{scope}
+
+% ----------------------------------------------------
+\draw[thick, dash dot, draw=black!70] (3.92,0) -- (3.92,4.12);
+
+\node[anchor=north] at (7.1,0.15) {\uline{Programa Replicado}};
+
+\node[anchor=north] at (5.2,1) {Réplica A};
+
+\begin{scope}[scale=0.8, shift={(5,0.5)}]
+\filldraw[box, fill=red!20] (1,1.5) rectangle (2,2.5);
+\filldraw[box, fill=blue!20] (1,2) rectangle (1.5,2.5);
+\filldraw[box, fill=yellow!20] (1.5, 2) rectangle (2,2.5);
+\end{scope}
+
+\node[anchor=north] at (7.2,1) {Réplica B};
+
+\begin{scope}[scale=0.8, shift={(7.5,0.5)}]
+\filldraw[box, fill=red!20] (1,1.5) rectangle (2,2.5);
+\filldraw[box, fill=blue!20] (1,2) rectangle (1.5,2.5);
+\filldraw[box, fill=yellow!20] (1.5, 2) rectangle (2,2.5);
+\end{scope}
+
+\node[anchor=north] at (9.2,1) {Réplica C};
+
+\begin{scope}[scale=0.8, shift={(10,0.5)}]
+\filldraw[box, fill=red!20] (1,1.5) rectangle (2,2.5);
+\filldraw[box, fill=blue!20] (1,2) rectangle (1.5,2.5);
+\filldraw[box, fill=yellow!20] (1.5, 2) rectangle (2,2.5);
+\end{scope}
+
+\begin{scope}[shift={(4.6,0.0)}]
+\draw[->, thick, draw=black!70] (0,3.5) -- (5.3,3.5);
+\filldraw[fill=black!70, draw=black!70] (0.05,3.5) circle (1.5pt);
+\end{scope}
+
+\filldraw[fill=black!70, draw=black!70] (5.4,2.2) circle (1.5pt);
+\filldraw[fill=black!70, draw=black!70] (7.4,2.2) circle (1.5pt);
+\filldraw[fill=black!70, draw=black!70] (9.4,2.2) circle (1.5pt);
+
+\begin{scope}[shift={(4.1,0.0)}]
+\draw[thick, draw=black!70] (1.3,2.2) -- (1.3,2.75);
+\node[anchor=north east] at (2.1,2.65) {Requisição};
+\draw[->, thick, draw=black!70] (1.3,3.1) -- (1.3,3.4);
+\filldraw[fill=yellow!20, draw=black!70] (1.3,3.5) circle (2pt);
+\end{scope}
+
+\begin{scope}[shift={(4.5,0.0)}]
+\node[anchor=north east] at (3.1,3.5) {Consenso};
+\draw[->, thick, draw=black!70] (0.9,2.2) to[bend right]  (1.99,3.4);
+\filldraw[fill=yellow!20, draw=black!70] (2,3.5) circle (2pt);
+\draw[->, thick, draw=black!70] (2.9,2.2) to[bend left]  (2.30,3.4);
+\filldraw[fill=yellow!20, draw=black!70] (2.3,3.5) circle (2pt);
+\draw[->, thick, draw=black!70] (4.9,2.2) to[bend left=55]  (2.63,3.4);
+\filldraw[fill=yellow!20, draw=black!70] (2.6,3.5) circle (2pt);
+\end{scope}
+
+\filldraw[fill=black!70, draw=black!70] (5,2.2) circle (1.5pt);
+\filldraw[fill=black!70, draw=black!70] (7,2.2) circle (1.5pt);
+\filldraw[fill=black!70, draw=black!70] (9,2.2) circle (1.5pt);
+
+\begin{scope}[shift={(6.5,0.0)}]
+\node[anchor=north east] at (3.1,3.5) {Execução};
+\draw[->, thick, draw=black!70] (-1.5,2.2) to[bend right] (1.97,3.4);
+\filldraw[fill=blue!20, draw=black!70] (2,3.5) circle (2pt);
+\draw[->, thick, draw=black!70] (0.5,2.2) to[bend right=55] (2.28,3.4);
+\filldraw[fill=blue!20, draw=black!70] (2.3,3.5) circle (2pt);
+\draw[->, thick, draw=black!70] (2.5,2.2) to[bend left] (2.58,3.4);
+\filldraw[fill=blue!20, draw=black!70] (2.6,3.5) circle (2pt);
+\end{scope}
+
+\begin{scope}[shift={(-1.2,0)}]
+\begin{scope}[shift={(0,0)}]
+\filldraw[box, fill=red!20] (1,4.5) rectangle (1.25,4.75);
+\node[anchor=west] at (1.2,4.65) {Programa};
+\end{scope}
+\begin{scope}[shift={(2.25,0)}]
+\filldraw[box, fill=blue!20] (1,4.5) rectangle (1.25,4.75);
+\node[anchor=west] at (1.2,4.65) {Ação};
+\end{scope}
+\begin{scope}[shift={(3.8,0)}]
+\filldraw[box, fill=yellow!20] (1,4.5) rectangle (1.25,4.75);
+\node[anchor=west] at (1.2,4.65) {Replicação};
+\end{scope}
+\end{scope}
+
+\end{tikzpicture}
+\end{center}
+
+Desenvolver aplicações replicadas exige uma certa habilidade por parte da equipe de 
+desenvolvimento para que a aplicação seja determinista, também é necessário que 
+bibliotecas ou \textit{frameworks} que realizam a replicação sejam estudados o que 
+pode exigir tempo e maturidade dessa equipe.
+Usar metaprogramação nesse cenário melhora o desenvolvimento, pois torna a replicação
+transparente para a equipe de desenvolvimento, o que reduz a necessidade de compreender 
+como essas bibliotecas ou \textit{frameworks} funcionam. A metaprogramação também 
+melhora o tempo gasto em desenvolvimento que se torna menor uma vez que a 
+responsabilidade de tornar a aplicação replicável fica a cargo da metaprogramação e 
+não da equipe de desenvolvimento.
+
+\section{Replicação e Metaprogramação}
+
+Esse documento é um resumo da dissertação \textit{Replicação Orientada a Metaprogramação}
+\cite{fellipe:2018}. Nessa dissertação a abordagem explicada 
+na sessão anterior foi desenvolvida e validada, usando o \textit{framework} Treplica
+\cite{vieira:2008} para prover replicação e a linguagem de programação Cyan
+\cite{cyan:2018} por permitir metaprogramação em compilação. Aqui será apresentado 
+um resumo desse trabalho, e na próxima sessão as conclusões e impactos da pesquisa.
+
+Treplica é um \textit{framework} baseado em estados e ações. As aplicações 
+desenvolvidas com ele implementam seu comportamento no formato de ações que 
+quando passados à máquina de estados de Treplica,  
+alteram seu estado interno. Essas ações quando enviadas da aplicação para máquina 
+de estados de Treplica também são repassadas para o grupo de réplicas 
+a qual a réplica que enviou a ação está vinculada. Essas ações quando recebidas 
+pelas demais réplicas modificam o estado interno da máquina de estados de Treplica
+de quem a recebeu. Desse modo todas as réplicas de um grupo sempre estarão com a
+máquina de Treplica no mesmo estado, essas réplicas serão iguais.
+
+A metaprogramação em Cyan é aplicada durante a compilação das aplicações. Nessa 
+linguagem é possível desenvolver programas (metaprogramas) que são executados pelo 
+compilador de Cyan no momento da compilação de um código-fonte. Com base em 
+elementos encontrados no código-fonte que está sendo compilado esses 
+metaprogramas são executados pelo compilador para gerar uma nova versão do 
+código-fonte original. Os metaprogramas 
+usados pelo compilador de Cyan devem ser implementados usando o protocolo 
+de metaobjetos (biblioteca) fornecido junto ao código-fonte do compilador 
+da linguagem Cyan.
+
+Nessa pesquisa foi desenvolvido um metaprograma em Cyan que durante a compilação
+gera uma versão replicável de aplicações que não implementam replicação.
+Com base em marcações (anotações) encontradas no código-fonte dessas aplicações 
+não replicadas o compilador chama os metaprogramas desenvolvidos para
+gerar uma versão replicável da mesma aplicação. Essa nova versão usa o 
+\textit{framework} Treplica para implementar a replicação nessas aplicações.
+
+\begin{center}
+\begin{tikzpicture}[yscale=-1,scale=1.218]
+
+\node[draw=black!60, fill=red!20, thick, anchor=north west, align=center] at (0,1) {Código-Fonte Cyan\\com @anotações};
+\node[draw=black!60, fill=green!20, thick, anchor=north west, align=center] at (3.9,1) {Metaoprogramas das\\@anotações};
+\node[draw=black!60, fill=gray!20, thick, anchor=north west, align=center] at (0,3) {Compilação\\Etapa A};
+\node[draw=black!60, fill=red!20, thick, anchor=north west, align=center] at (4,3) {Nova versão do\\Código-Fonte Cyan};
+\node[draw=black!60, fill=gray!20, thick, anchor=north west, align=center] at (8.78,3) {Compilação\\Etapa B};
+\node[draw=black!60, fill=red!20, thick, anchor=north west, align=center] at (8.5,5) {Código-Fonte\\Final};
+
+\draw[->, thick, draw=black!70] (0.95,2.05) to (0.95, 2.98);
+\draw[->, thick, draw=black!70] (5.5,2.05) .. controls (5.5,3) and (1.05,2) .. (1.1, 2.98);
+\draw[->, thick, draw=black!70] (1.95,3.5) to (3.98, 3.5);
+\draw[->, thick, draw=black!70] (7.08,3.5) to (8.77, 3.5);
+\draw[->, thick, draw=black!70] (9.7,4.05) to (9.7, 4.99);
+
+\begin{scope}[shift={(-0.9,1.15)}]
+\begin{scope}[shift={(0,0)}]
+\filldraw[box, fill=red!20] (1,4.5) rectangle (1.25,4.75);
+\node[anchor=west] at (1.2,4.65) {Código-Fonte};
+\end{scope}
+\begin{scope}[shift={(2.95,0)}]
+\filldraw[box, fill=green!20] (0.85,4.5) rectangle (1.1,4.75);
+\node[anchor=west] at (1.1,4.65) {Metaprograma};
+\end{scope}
+\begin{scope}[shift={(5.7,0)}]
+\filldraw[box, fill=gray!20] (1,4.5) rectangle (1.25,4.75);
+\node[anchor=west] at (1.2,4.65) {Compilador};
+\end{scope}
+\end{scope}
+
+\end{tikzpicture}
+\end{center}
+
+Outro metaprograma que foi desenvolvido nessa pesquisa valida se o código-fonte
+não replicado apresenta casos de não determinismo. Essa validação não
+cobriu todos as possíveis situações de não determinismo e necessita de uma 
+configuração prévia para poder identificar essas ocorrências. Essa configuração
+mapeia quais métodos podem ser considerados não deterministas,
+com base nessa lista o metaprograma visita os métodos implementados no código-fonte 
+da aplicação procurando por chamadas a essas métodos não 
+deterministas listados.
+
+Detalhes de implementação como códigos-fonte exemplo podem ser encontrados 
+no texto da dissertação \cite{fellipe:2018}. Nela também são mostrados outros \textit{frameworks}
+usados para implementar replicação e outras linguagens de programação que 
+tem suporte a outras formas de metaprogramação. 
+
+\section{Contribuição e Trabalhos Futuros }
+
+Nesse trabalho foi proposto o uso da metaprogramação para permitir a implementação 
+de requisitos não funcionais de uma aplicação de modo mais transparente. Essa 
+proposta foi validada no contexto de aplicações replicáveis. Trabalhos futuros podem
+usar a mesma proposta em contextos diferentes como segurança, portabilidade, 
+desempenho, usabilidade, padrões de código-fonte, e outros.
+
+A validação aplicada ao caso de não determinismo mostra uma outra forma possível de 
+utilizar a metaprogramação. Ela pode ser usada no intuito de verificar o código-fonte 
+das aplicações na busca de erros conceituais de programação, que não seriam indicados
+pelo processo padrão de compilação. Essa abordagem também pode ser aplicada a problemas 
+de outras áreas da computação, para identificar possíveis erros no uso de bibliotecas
+e \textit{framework}.
+
+A metaprogramação em compilação é um conceito que pode ser usado para 
+padronizar atividades de programação realizadas de modo manual por equipes de 
+desenvolvimento. Muitas implementações e verificações que hoje são realizadas de forma 
+manual podem ser automatizadas em linguagens que permitem esse tipo de metaprogramação.
+
+Durante a realização dessa pesquisa foi submetido um artigo, \textit{Transparent Replication 
+Using Metaprogramming in Cyan} \cite{sblp:2018}, ao Simpósio Brasileiro de 
+Linguagens de Programação (SBLP), que aconteceu em Fortaleza (Ceará, Brasil).
+Nesse artigo é mostrada a automatização do desenvolvimento do código-fonte. Ele não
+trata da verificação desse código-fonte. A automatização foi aplicada em programas
+distribuídos que foram desenvolvidos em Cyan usando Treplica. Essa publicação do ponto de vista 
+dos detalhes técnicos está situada entre esse artigo a dissertação 
+\textit{Replicação Orientada a Metaprogramação} \cite{fellipe:2018}.
+
+O código-fonte desenvolvido nessa pesquisa está disponível na internet em um
+repositório de projetos (https://bitbucket.org/fellipe-ugliara/mestrado/src/master/). 
+Caso seja necessário reproduzir essa pesquisa, o ponto de partida
+é esse repositório. Para os entusiastas do \LaTeX, também estão disponíveis: o código-fonte
+dessa dissertação, e o código-fonte da apresentação usada na defesa desse trabalho. Os
+arquivos README.md do repositório contêm detalhes de como executar esse projeto.
+
+\bibliographystyle{sbc}
+\bibliography{sbc}
+
+\end{document}

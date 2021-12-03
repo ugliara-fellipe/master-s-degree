@@ -1,0 +1,11 @@
+package cyan.lang
+
+object Sum<T>(T &sum) extends FunctionFieldPipeNil<T, Nil>
+
+     override
+     func eval: T x {
+          sum = sum + x
+     }
+     
+end
+
